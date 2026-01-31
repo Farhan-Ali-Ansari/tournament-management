@@ -106,7 +106,7 @@ body {
   cursor: pointer;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
-  padding: 0.6rem 1.2rem;
+  padding: 0.5rem 0.9rem;
   font-weight: 600;
   font-size: 0.9rem;
   transition: all 0.2s ease;
@@ -130,6 +130,7 @@ body {
   background-color: rgba(239, 68, 68, 0.1);
   color: var(--color-danger);
   border-color: rgba(239, 68, 68, 0.2);
+  margin-top: 10px;
 }
 
 .btn-reset:hover {
@@ -988,4 +989,18 @@ body {
   width: auto;
   max-width: 100%;
   white-space: nowrap;
+}
+.btn-action {
+  background-color: var(--color-accent);
+  color: var(--color-bg-app);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* Ensure the screenshot area has some padding when captured */
+.main-panel {
+  padding: 10px;
+  border-radius: var(--radius-md);
 }

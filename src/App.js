@@ -1,11 +1,31 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import TeamForm from "./components/TeamForm";
 import TeamList from "./components/TeamList";
 import LeagueMatches from "./components/LeagueMatches";
 import LeagueTable from "./components/LeagueTable";
 import "./App.css";
+import html2canvas from "html2canvas";
 
 export default function App() {
+  const screenshotRef = useRef(null); // Create a reference
+
+  const takeScreenshot = async () => {
+    if (!screenshotRef.current) return;
+    
+    // Capture the element
+    const canvas = await html2canvas(screenshotRef.current, {
+      backgroundColor: "#0f172a", // Match your app background color
+      scale: 2, // Higher quality
+    });
+    
+    // Create a download link
+    const image = canvas.toDataURL("image/png");
+    const link = document.createElement("a");
+    link.href = image;
+    link.download = `tournament-status-${Date.now()}.png`;
+    link.click();
+  };
+  
   // Options: 'welcome', 'teams', 'select', 'game'
   const [view, setView] = useState("welcome");
 
@@ -230,6 +250,7 @@ export default function App() {
             <TeamForm onAddTeam={addTeam} />
             <TeamList teams={teams} onDelete={deleteTeam} />
             <div style={{marginTop: '1rem', borderTop: '1px solid var(--color-border)', paddingTop: '1rem'}}>
+              <button type="button" className="mode-btn btn-action" onClick={takeScreenshot}>📸 Save Screenshot</button>
                <button type="button" className="btn-reset mode-btn" style={{width:'100%'}} onClick={resetTournament}>
                 Reset Everything
               </button>
@@ -237,7 +258,7 @@ export default function App() {
           </div>
         </aside>
 
-        <main className="main-panel">
+        <main className="main-panel" ref={screenshotRef}>
           {mode === "league" && (
             <>
               {matches.length === 0 ? (
