@@ -6,7 +6,10 @@ import LeagueTable from "./components/LeagueTable";
 import "./App.css";
 
 export default function App() {
-  // ===== STATES =====
+  // Options: 'welcome', 'teams', 'select', 'game'
+  const [view, setView] = useState("welcome");
+
+  // ===== DATA STATES =====
   const [teams, setTeams] = useState(() => {
     const saved = localStorage.getItem("teams");
     return saved ? JSON.parse(saved) : [];
@@ -30,7 +33,7 @@ export default function App() {
   useEffect(() => { localStorage.setItem("matches", JSON.stringify(matches)); }, [matches]);
   useEffect(() => { localStorage.setItem("knockoutRounds", JSON.stringify(knockoutRounds)); }, [knockoutRounds]);
 
-  // ===== TEAM LOGIC =====
+  // ===== LOGIC: TEAMS =====
   const addTeam = (name) => {
     const trimmed = name.trim();
     if (!trimmed) return alert("Team name cannot be empty!");
@@ -45,15 +48,15 @@ export default function App() {
     setKnockoutRounds([]);
   };
 
-  // ===== LEAGUE LOGIC =====
-  const generateLeagueMatches = (teams) => {
-    if(teams.length < 2) return alert("Need at least 2 teams!");
-    if(!window.confirm("This will overwrite current scores. Continue?")) return;
+  // ===== LOGIC: LEAGUE =====
+  const generateLeagueMatches = (currentTeams) => {
+    if(currentTeams.length < 2) return alert("Need at least 2 teams!");
+    if(matches.length > 0 && !window.confirm("This will overwrite current scores. Continue?")) return;
     
     const list = [];
-    for (let i = 0; i < teams.length; i++) {
-      for (let j = i + 1; j < teams.length; j++) {
-        list.push({ id: `${teams[i].id}-${teams[j].id}`, teamA: teams[i].name, teamB: teams[j].name, scoreA: "", scoreB: "" });
+    for (let i = 0; i < currentTeams.length; i++) {
+      for (let j = i + 1; j < currentTeams.length; j++) {
+        list.push({ id: `${currentTeams[i].id}-${currentTeams[j].id}`, teamA: currentTeams[i].name, teamB: currentTeams[j].name, scoreA: "", scoreB: "" });
       }
     }
     setMatches(list);
@@ -76,6 +79,9 @@ export default function App() {
     matches.forEach(m => {
       if (m.scoreA === "" || m.scoreB === "") return;
       const a = Number(m.scoreA), b = Number(m.scoreB);
+      
+      // Safety check if team was deleted but match exists
+      if(!table[m.teamA] || !table[m.teamB]) return;
 
       table[m.teamA].played++; table[m.teamB].played++;
 
@@ -84,14 +90,12 @@ export default function App() {
       else { table[m.teamA].draw++; table[m.teamB].draw++; table[m.teamA].points++; table[m.teamB].points++; }
     });
 
-    const sorted = Object.entries(table)
-      .sort(([, a], [, b]) => b.points - a.points || b.won - a.won) // Sort by points then wins
+    return Object.entries(table)
+      .sort(([, a], [, b]) => b.points - a.points || b.won - a.won)
       .reduce((obj, [key, value]) => { obj[key] = value; return obj; }, {});
-
-    return sorted;
   };
 
-  // ===== KNOCKOUT LOGIC =====
+  // ===== LOGIC: KNOCKOUT =====
   const generateKnockoutMatches = (currentTeams) => {
     const shuffled = [...currentTeams].sort(() => Math.random() - 0.5);
     const round = [];
@@ -112,10 +116,8 @@ export default function App() {
       const updated = [...prev];
       updated[roundIndex] = updated[roundIndex].map(m => m.id === matchId ? { ...m, winner } : m);
       
-      // Check if round is complete
       const roundComplete = updated[roundIndex].every(m => m.winner);
       
-      // If round complete and we haven't already generated the next round
       if (roundComplete && updated.length === roundIndex + 1) {
         const winners = updated[roundIndex].map(m => ({ name: m.winner }));
         if (winners.length > 1) {
@@ -126,64 +128,122 @@ export default function App() {
     });
   };
 
-  // ===== RESET TOURNAMENT =====
   const resetTournament = () => {
     if(!window.confirm("Are you sure? This will delete all data.")) return;
     setTeams([]);
     setMatches([]);
     setKnockoutRounds([]);
-    setMode("league");
     localStorage.clear();
+    setView("teams"); // Go back to team selection on reset
   };
 
-  // ===== UI =====
+  // ===== NAVIGATION =====
+  const goNextToSelection = () => {
+    if (teams.length < 2) return alert("Please add at least 2 teams.");
+    setView("select");
+  };
+
+  const enterGame = (selectedMode) => {
+    setMode(selectedMode);
+    setView("game");
+  };
+
+  // ===== RENDER 1: WELCOME =====
+  if (view === "welcome") {
+    return (
+      <div className="splash-screen">
+        <div className="splash-content">
+          <h1 className="splash-title">Jackaroo Tournament Manager</h1>
+          <h3 className="splash-subtitle">Made by Farhan</h3>
+          <button className="btn-primary-large" onClick={() => setView('teams')}>
+            Start
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ===== RENDER 2: TEAMS (NEW STEP) =====
+  if (view === "teams") {
+    return (
+      <div className="splash-screen">
+        <div className="wizard-card">
+          <h2 className="section-title" style={{textAlign:'center', fontSize: '1.2rem'}}>Step 1: Add Teams</h2>
+          <TeamForm onAddTeam={addTeam} />
+          <div className="wizard-list-area">
+             <TeamList teams={teams} onDelete={deleteTeam} />
+          </div>
+          <div className="wizard-footer">
+             <button className="btn-text" onClick={() => setView('welcome')}>Back</button>
+             <button 
+               className="btn-primary-large" 
+               style={{padding: '0.8rem 2rem', fontSize: '1rem', opacity: teams.length < 2 ? 0.5 : 1}}
+               onClick={goNextToSelection}
+             >
+               Next: Select Mode →
+             </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ===== RENDER 3: SELECTION =====
+  if (view === "select") {
+    return (
+      <div className="splash-screen">
+        <div className="splash-content">
+          <h2 className="splash-title">Step 2: Game Mode</h2>
+          <div className="selection-buttons">
+            <button className="btn-card" onClick={() => enterGame("league")}>
+              🏆<br/>League
+            </button>
+            <button className="btn-card" onClick={() => enterGame("knockout")}>
+              🥊<br/>Knockout
+            </button>
+          </div>
+          <button className="btn-text" onClick={() => setView('teams')}>← Back to Teams</button>
+        </div>
+      </div>
+    );
+  }
+
+  // ===== RENDER 4: GAME =====
   return (
     <div className="tournament-app">
       <header className="app-header">
         <div className="app-header__inner">
-          <h1 className="app-title">🏆 Tournament Manager</h1>
-          <div className="mode-switcher">
-            <button
-              type="button"
-              className={`mode-btn ${mode === "league" ? "mode-btn--active" : ""}`}
-              onClick={() => setMode("league")}
-            >
-              League
-            </button>
-            <button
-              type="button"
-              className={`mode-btn ${mode === "knockout" ? "mode-btn--active" : ""}`}
-              onClick={() => setMode("knockout")}
-            >
-              Knockout
-            </button>
-            <button type="button" className="mode-btn btn-reset" onClick={resetTournament}>
-              Reset All
-            </button>
+          <div className="header-top">
+             <button onClick={() => setView('select')} className="btn-back">← Menu</button>
+             <h1 className="app-title">
+               {mode === 'league' ? 'League Manager' : 'Knockout Manager'}
+             </h1>
           </div>
         </div>
       </header>
 
       <div className="content-grid">
+        {/* Sidebar now strictly for edits or reset */}
         <aside className="sidebar-panel">
           <div className="panel-card">
-            <h3 className="section-title">Manage Teams</h3>
+            <h3 className="section-title">Quick Edit Teams</h3>
             <TeamForm onAddTeam={addTeam} />
             <TeamList teams={teams} onDelete={deleteTeam} />
+            <div style={{marginTop: '1rem', borderTop: '1px solid var(--color-border)', paddingTop: '1rem'}}>
+               <button type="button" className="btn-reset mode-btn" style={{width:'100%'}} onClick={resetTournament}>
+                Reset Everything
+              </button>
+            </div>
           </div>
         </aside>
 
         <main className="main-panel">
-          {/* League Mode */}
           {mode === "league" && (
             <>
               {matches.length === 0 ? (
                 <div className="empty-state">
-                  <button
-                    type="button"
-                    className="btn-action"
-                    onClick={() => generateLeagueMatches(teams)}
-                  >
+                  <h3>{teams.length} Teams Ready</h3>
+                  <button type="button" className="btn-action" onClick={() => generateLeagueMatches(teams)}>
                     Start League Season
                   </button>
                 </div>
@@ -200,11 +260,7 @@ export default function App() {
                     </div>
                   </div>
                   <div className="league-content__actions">
-                    <button
-                      type="button"
-                      className="btn-reset mode-btn"
-                      onClick={() => setMatches([])}
-                    >
+                    <button type="button" className="btn-reset mode-btn" onClick={() => setMatches([])}>
                       Regenerate Fixtures
                     </button>
                   </div>
@@ -213,16 +269,12 @@ export default function App() {
             </>
           )}
 
-          {/* Knockout Mode */}
           {mode === "knockout" && (
             <>
               {knockoutRounds.length === 0 && (
                 <div className="empty-state">
-                  <button
-                    type="button"
-                    className="btn-action"
-                    onClick={startKnockout}
-                  >
+                  <h3>{teams.length} Teams Ready</h3>
+                  <button type="button" className="btn-action" onClick={startKnockout}>
                     Start Knockout Cup
                   </button>
                 </div>
@@ -230,67 +282,45 @@ export default function App() {
 
               {knockoutRounds.length > 0 && (
                 <>
-              <div className="knockout-rounds">
-              {knockoutRounds.map((round, rIndex) => (
-                <div className="panel-card knockout-round" key={rIndex}>
-                  <h3 className="section-title">
-                    {knockoutRounds.length - 1 === rIndex && knockoutRounds.at(-1).length === 1
-                      ? "Finals"
-                      : `Round ${rIndex + 1}`}
-                  </h3>
-                  {round.map((m) => (
-                    <div className="knockout-match-card" key={m.id}>
-                      <span className="knockout-match-teams">
-                        {m.teamA} <span className="vs-label">VS</span> {m.teamB}
-                      </span>
-
-                      {!m.winner && m.teamB !== "BYE" && (
-                        <div className="knockout-winner-btns">
-                          <button
-                            type="button"
-                            className="mode-btn btn-team-a"
-                            onClick={() => selectWinner(rIndex, m.id, m.teamA)}
-                          >
-                            {m.teamA} Win
-                          </button>
-                          <button
-                            type="button"
-                            className="mode-btn btn-team-b"
-                            onClick={() => selectWinner(rIndex, m.id, m.teamB)}
-                          >
-                            {m.teamB} Win
-                          </button>
-                        </div>
-                      )}
-
-                      {m.winner && (
-                        <strong className="knockout-winner-text">Winner: {m.winner}</strong>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ))}
-              </div>
-
-              <div className="league-content__actions">
-                <button
-                  type="button"
-                  className="btn-reset mode-btn"
-                  onClick={() => setKnockoutRounds([])}
-                >
-                  Regenerate Fixtures
-                </button>
-              </div>
+                  <div className="knockout-rounds">
+                    {knockoutRounds.map((round, rIndex) => (
+                      <div className="panel-card knockout-round" key={rIndex}>
+                        <h3 className="section-title">
+                          {knockoutRounds.length - 1 === rIndex && knockoutRounds.at(-1).length === 1
+                            ? "Finals"
+                            : `Round ${rIndex + 1}`}
+                        </h3>
+                        {round.map((m) => (
+                          <div className="knockout-match-card" key={m.id}>
+                            <span className="knockout-match-teams">
+                              {m.teamA} <span className="vs-label">VS</span> {m.teamB}
+                            </span>
+                            {!m.winner && m.teamB !== "BYE" && (
+                              <div className="knockout-winner-btns">
+                                <button type="button" className="mode-btn btn-team-a" onClick={() => selectWinner(rIndex, m.id, m.teamA)}>
+                                  {m.teamA}
+                                </button>
+                                <button type="button" className="mode-btn btn-team-b" onClick={() => selectWinner(rIndex, m.id, m.teamB)}>
+                                  {m.teamB}
+                                </button>
+                              </div>
+                            )}
+                            {m.winner && <strong className="knockout-winner-text">Winner: {m.winner}</strong>}
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="league-content__actions">
+                    <button type="button" className="btn-reset mode-btn" onClick={() => setKnockoutRounds([])}>
+                      Reset Knockout
+                    </button>
+                  </div>
                 </>
               )}
-
-              {knockoutRounds.length > 0 &&
-                knockoutRounds.at(-1).length === 1 &&
-                knockoutRounds.at(-1)[0].winner && (
-                  <h2 className="champion-banner">
-                    🏆 {knockoutRounds.at(-1)[0].winner} 🏆
-                  </h2>
-                )}
+              {knockoutRounds.length > 0 && knockoutRounds.at(-1).length === 1 && knockoutRounds.at(-1)[0].winner && (
+                <h2 className="champion-banner">🏆 {knockoutRounds.at(-1)[0].winner} 🏆</h2>
+              )}
             </>
           )}
         </main>
