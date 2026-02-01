@@ -14,7 +14,7 @@ export default function App() {
     
     // Capture the element
     const canvas = await html2canvas(screenshotRef.current, {
-      backgroundColor: "#0f172a", // Match your app background color
+      backgroundColor: "#0a0e1a", // Match app background
       scale: 2, // Higher quality
     });
     
@@ -47,6 +47,8 @@ export default function App() {
     return saved ? JSON.parse(saved) : [];
   });
 
+  const [leagueTab, setLeagueTab] = useState("fixtures"); // "fixtures" | "standings"
+
   // ===== LOCAL STORAGE =====
   useEffect(() => { localStorage.setItem("teams", JSON.stringify(teams)); }, [teams]);
   useEffect(() => { localStorage.setItem("mode", mode); }, [mode]);
@@ -66,6 +68,27 @@ export default function App() {
     setTeams(prev => prev.filter(t => t.id !== id));
     setMatches([]);
     setKnockoutRounds([]);
+  };
+
+  const renameTeam = (id, newName) => {
+    const trimmed = newName.trim();
+    if (!trimmed) return;
+    const team = teams.find(t => t.id === id);
+    if (!team || team.name === trimmed) return;
+    if (teams.some(t => t.id !== id && t.name.toLowerCase() === trimmed.toLowerCase())) return alert("A team with this name already exists!");
+    const oldName = team.name;
+    setTeams(prev => prev.map(t => t.id === id ? { ...t, name: trimmed } : t));
+    setMatches(prev => prev.map(m => ({
+      ...m,
+      teamA: m.teamA === oldName ? trimmed : m.teamA,
+      teamB: m.teamB === oldName ? trimmed : m.teamB,
+    })));
+    setKnockoutRounds(prev => prev.map(round => round.map(m => ({
+      ...m,
+      teamA: m.teamA === oldName ? trimmed : m.teamA,
+      teamB: m.teamB === oldName ? trimmed : m.teamB,
+      winner: m.winner === oldName ? trimmed : m.winner,
+    }))));
   };
 
   // ===== LOGIC: LEAGUE =====
@@ -148,6 +171,16 @@ export default function App() {
     });
   };
 
+  const undoWinner = (roundIndex, matchId) => {
+    setKnockoutRounds(prev => {
+      const updated = prev.slice(0, roundIndex + 1);
+      updated[roundIndex] = updated[roundIndex].map(m =>
+        m.id === matchId ? { ...m, winner: "" } : m
+      );
+      return updated;
+    });
+  };
+
   const resetTournament = () => {
     if(!window.confirm("Are you sure? This will delete all data.")) return;
     setTeams([]);
@@ -188,10 +221,10 @@ export default function App() {
     return (
       <div className="splash-screen">
         <div className="wizard-card">
-          <h2 className="section-title" style={{textAlign:'center', fontSize: '1.2rem'}}>Step 1: Add Teams</h2>
+          <h2 className="section-title wizard-step-title">Step 1: Add Teams</h2>
           <TeamForm onAddTeam={addTeam} />
           <div className="wizard-list-area">
-             <TeamList teams={teams} onDelete={deleteTeam} />
+             <TeamList teams={teams} onDelete={deleteTeam} onRename={renameTeam} />
           </div>
           <div className="wizard-footer">
              <button className="btn-text" onClick={() => setView('welcome')}>Back</button>
@@ -248,10 +281,10 @@ export default function App() {
           <div className="panel-card">
             <h3 className="section-title">Quick Edit Teams</h3>
             <TeamForm onAddTeam={addTeam} />
-            <TeamList teams={teams} onDelete={deleteTeam} />
-            <div style={{marginTop: '1rem', borderTop: '1px solid var(--color-border)', paddingTop: '1rem'}}>
+            <TeamList teams={teams} onDelete={deleteTeam} onRename={renameTeam} />
+            <div className="sidebar-actions">
               <button type="button" className="mode-btn btn-action" onClick={takeScreenshot}>📸 Save Screenshot</button>
-               <button type="button" className="btn-reset mode-btn" style={{width:'100%'}} onClick={resetTournament}>
+               <button type="button" className="btn-reset mode-btn" onClick={resetTournament}>
                 Reset Everything
               </button>
             </div>
@@ -270,16 +303,34 @@ export default function App() {
                 </div>
               ) : (
                 <div className="league-content">
-                  <div className="league-content__grid">
+                  <div className="league-tabs">
+                    <button
+                      type="button"
+                      className={`league-tab ${leagueTab === "fixtures" ? "league-tab--active" : ""}`}
+                      onClick={() => setLeagueTab("fixtures")}
+                    >
+                      Fixtures
+                    </button>
+                    <button
+                      type="button"
+                      className={`league-tab ${leagueTab === "standings" ? "league-tab--active" : ""}`}
+                      onClick={() => setLeagueTab("standings")}
+                    >
+                      Standings
+                    </button>
+                  </div>
+                  {leagueTab === "fixtures" && (
                     <div className="panel-card panel-card--fixtures">
                       <h3 className="section-title">Match Fixtures</h3>
                       <LeagueMatches matches={matches} onScoreChange={handleScoreChange} />
                     </div>
+                  )}
+                  {leagueTab === "standings" && (
                     <div className="panel-card panel-card--standings">
                       <h3 className="section-title">Standings</h3>
                       <LeagueTable table={calculateTable()} />
                     </div>
-                  </div>
+                  )}
                   <div className="league-content__actions">
                     <button type="button" className="btn-reset mode-btn" onClick={() => setMatches([])}>
                       Regenerate Fixtures
@@ -311,8 +362,9 @@ export default function App() {
                             ? "Finals"
                             : `Round ${rIndex + 1}`}
                         </h3>
-                        {round.map((m) => (
+                        {round.map((m, mIndex) => (
                           <div className="knockout-match-card" key={m.id}>
+                            <span className="knockout-match-num">Match {mIndex + 1}</span>
                             <span className="knockout-match-teams">
                               {m.teamA} <span className="vs-label">VS</span> {m.teamB}
                             </span>
@@ -326,7 +378,14 @@ export default function App() {
                                 </button>
                               </div>
                             )}
-                            {m.winner && <strong className="knockout-winner-text">Winner: {m.winner}</strong>}
+                            {m.winner && (
+                              <div className="knockout-winner-row">
+                                <strong className="knockout-winner-text">Winner: {m.winner}</strong>
+                                <button type="button" className="btn-undo mode-btn" onClick={() => undoWinner(rIndex, m.id)} title="Undo winner">
+                                  Undo
+                                </button>
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>

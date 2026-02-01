@@ -1,8 +1,9 @@
 export default function LeagueMatches({ matches, onScoreChange }) {
   return (
     <div className="league-fixtures">
-      {matches.map((match) => (
+      {matches.map((match, index) => (
         <div key={match.id} className="league-fixture-row">
+          <span className="fixture-num">Match {index + 1}</span>
           <span className="fixture-team fixture-team--a">{match.teamA}</span>
           <div className="fixture-scores">
             <input
