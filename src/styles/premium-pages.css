@@ -650,39 +650,6 @@ a.nav-drawer__link.is-active {
   box-shadow: 0 0 0 3px var(--gold-muted) !important;
 }
 
-/* Knockout bracket */
-.bracket-scroll {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  margin: 0 calc(-1 * var(--space-md));
-  padding: 0 var(--space-md) var(--space-md);
-}
-
-.bracket-columns {
-  display: flex;
-  gap: var(--space-lg);
-  min-width: min-content;
-}
-
-.bracket-round {
-  min-width: 200px;
-}
-
-.bracket-round__label {
-  font-size: 0.6875rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--gold-primary);
-  text-align: center;
-  margin-bottom: var(--space-sm);
-}
-
-.knockout-match-card--won {
-  border-color: rgba(201, 162, 39, 0.5) !important;
-  box-shadow: var(--gold-shadow) !important;
-}
-
 .champion-banner {
   font-family: var(--font-display);
   font-size: clamp(1.25rem, 5vw, 1.75rem);

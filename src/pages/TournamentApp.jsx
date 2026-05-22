@@ -6,6 +6,13 @@ import TeamList from "../components/TeamList";
 import TournamentTeamPicker from "../components/TournamentTeamPicker";
 import LeagueMatches from "../components/LeagueMatches";
 import LeagueTable from "../components/LeagueTable";
+import KnockoutBracket from "../components/KnockoutBracket";
+import {
+  buildFullBracket,
+  setMatchWinner,
+  clearMatchWinner,
+  getChampion,
+} from "../lib/knockoutBracket";
 import { useAuth } from "../context/AuthContext";
 import { useSavedTeams } from "../hooks/useSavedTeams";
 import { useTournamentData } from "../hooks/useTournamentData";
@@ -251,62 +258,20 @@ export default function TournamentApp() {
       }, {});
   };
 
-  const generateKnockoutMatches = (currentTeams) => {
-    const shuffled = [...currentTeams].sort(() => Math.random() - 0.5);
-    const round = [];
-    for (let i = 0; i < shuffled.length; i += 2) {
-      if (i + 1 < shuffled.length) {
-        round.push({
-          id: `${shuffled[i].name}-${shuffled[i + 1].name}`,
-          teamA: shuffled[i].name,
-          teamB: shuffled[i + 1].name,
-          winner: "",
-        });
-      } else {
-        round.push({
-          id: `${shuffled[i].name}-bye`,
-          teamA: shuffled[i].name,
-          teamB: "BYE",
-          winner: shuffled[i].name,
-        });
-      }
-    }
-    return round;
-  };
-
   const startKnockout = () => {
     if (teams.length < 2) return setError("Need at least 2 teams.");
     setError("");
     setMatches([]);
     setMode("knockout");
-    setKnockoutRounds([generateKnockoutMatches(teams)]);
+    setKnockoutRounds(buildFullBracket(teams));
   };
 
   const selectWinner = (roundIndex, matchId, winner) => {
-    setKnockoutRounds((prev) => {
-      const updated = [...prev];
-      updated[roundIndex] = updated[roundIndex].map((m) =>
-        m.id === matchId ? { ...m, winner } : m
-      );
-      const roundComplete = updated[roundIndex].every((m) => m.winner);
-      if (roundComplete && updated.length === roundIndex + 1) {
-        const winners = updated[roundIndex].map((m) => ({ name: m.winner }));
-        if (winners.length > 1) {
-          updated.push(generateKnockoutMatches(winners));
-        }
-      }
-      return updated;
-    });
+    setKnockoutRounds((prev) => setMatchWinner(prev, roundIndex, matchId, winner));
   };
 
   const undoWinner = (roundIndex, matchId) => {
-    setKnockoutRounds((prev) => {
-      const updated = prev.slice(0, roundIndex + 1);
-      updated[roundIndex] = updated[roundIndex].map((m) =>
-        m.id === matchId ? { ...m, winner: "" } : m
-      );
-      return updated;
-    });
+    setKnockoutRounds((prev) => clearMatchWinner(prev, roundIndex, matchId));
   };
 
   const resetTournamentData = async () => {
@@ -609,78 +574,11 @@ export default function TournamentApp() {
               ) : (
                 <>
                   <div className="bracket-scroll">
-                    <div className="bracket-columns knockout-rounds">
-                    {knockoutRounds.map((round, rIndex) => {
-                      const isFinal =
-                        knockoutRounds.length - 1 === rIndex &&
-                        knockoutRounds.at(-1).length === 1;
-                      const roundLabel = isFinal
-                        ? "Final"
-                        : rIndex === knockoutRounds.length - 2 && round.length === 2
-                          ? "Semi-Final"
-                          : `Round ${rIndex + 1}`;
-                      return (
-                      <div className="bracket-round panel-card knockout-round" key={rIndex}>
-                        <h3 className="bracket-round__label">{roundLabel}</h3>
-                        {round.map((m, mIndex) => (
-                          <div
-                            className={`knockout-match-card ${m.winner ? "knockout-match-card--won" : ""}`}
-                            key={m.id}
-                          >
-                            <span className="knockout-match-num">
-                              Match {mIndex + 1}
-                            </span>
-                            {m.teamB === "BYE" ? (
-                              <p className="knockout-match-bye">
-                                <span className="knockout-team-name is-winner">{m.teamA}</span>
-                                <span className="vs-label">advances (bye)</span>
-                              </p>
-                            ) : (
-                              <>
-                                <div className="knockout-match-teams">
-                                  <button
-                                    type="button"
-                                    className={`knockout-team-name ${
-                                      m.winner === m.teamA ? "is-winner" : ""
-                                    } ${m.winner && m.winner !== m.teamA ? "is-loser" : ""}`}
-                                    onClick={() =>
-                                      !m.winner && selectWinner(rIndex, m.id, m.teamA)
-                                    }
-                                    disabled={!!m.winner}
-                                  >
-                                    {m.teamA}
-                                  </button>
-                                  <span className="vs-label">vs</span>
-                                  <button
-                                    type="button"
-                                    className={`knockout-team-name ${
-                                      m.winner === m.teamB ? "is-winner" : ""
-                                    } ${m.winner && m.winner !== m.teamB ? "is-loser" : ""}`}
-                                    onClick={() =>
-                                      !m.winner && selectWinner(rIndex, m.id, m.teamB)
-                                    }
-                                    disabled={!!m.winner}
-                                  >
-                                    {m.teamB}
-                                  </button>
-                                </div>
-                                {m.winner && (
-                                  <button
-                                    type="button"
-                                    className="btn-undo"
-                                    onClick={() => undoWinner(rIndex, m.id)}
-                                  >
-                                    Undo
-                                  </button>
-                                )}
-                              </>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    );
-                    })}
-                    </div>
+                    <KnockoutBracket
+                      rounds={knockoutRounds}
+                      onSelectWinner={selectWinner}
+                      onUndoWinner={undoWinner}
+                    />
                   </div>
                   <div className="league-content__actions">
                     <button
@@ -693,13 +591,12 @@ export default function TournamentApp() {
                   </div>
                 </>
               )}
-              {knockoutRounds.length > 0 &&
-                knockoutRounds.at(-1).length === 1 &&
-                knockoutRounds.at(-1)[0].winner && (
-                  <h2 className="champion-banner">
-                    Champion — {knockoutRounds.at(-1)[0].winner}
-                  </h2>
-                )}
+              {(() => {
+                const champion = getChampion(knockoutRounds);
+                return champion ? (
+                  <h2 className="champion-banner">Champion — {champion}</h2>
+                ) : null;
+              })()}
             </>
           )}
         </main>
