@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import html2canvas from "html2canvas";
+import { exportScreenHD } from "../lib/exportImage";
 import TeamForm from "../components/TeamForm";
 import TeamList from "../components/TeamList";
 import TournamentTeamPicker from "../components/TournamentTeamPicker";
@@ -30,8 +30,11 @@ export default function TournamentApp() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const screenshotRef = useRef(null);
+  const leagueExportRef = useRef(null);
+  const knockoutExportRef = useRef(null);
+  const bracketScrollRef = useRef(null);
   const [mobileTeamsOpen, setMobileTeamsOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const pathView = location.pathname.split("/").pop();
   const initialView = VIEW_FROM_PATH[pathView] || "setup";
@@ -86,16 +89,38 @@ export default function TournamentApp() {
   };
 
   const takeScreenshot = async () => {
-    if (!screenshotRef.current) return;
-    const canvas = await html2canvas(screenshotRef.current, {
-      backgroundColor: "#08080a",
-      scale: 2,
-    });
-    const image = canvas.toDataURL("image/png");
-    const link = document.createElement("a");
-    link.href = image;
-    link.download = `tournament-${tournamentId}-${Date.now()}.png`;
-    link.click();
+    let target = null;
+    let suffix = "tournament";
+
+    if (mode === "knockout" && knockoutRounds.length > 0 && knockoutExportRef.current) {
+      target = knockoutExportRef.current;
+      suffix = "knockout-bracket";
+    } else if (mode === "league" && matches.length > 0 && leagueExportRef.current) {
+      target = leagueExportRef.current;
+      suffix = leagueTab === "standings" ? "league-table" : "league-fixtures";
+    }
+
+    if (!target) {
+      setError("Nothing to export yet. Start fixtures or the bracket first.");
+      return;
+    }
+
+    setExporting(true);
+    setError("");
+    try {
+      const safeName = (tournamentName || "tournament")
+        .trim()
+        .replace(/[^\w-]+/g, "-")
+        .slice(0, 48);
+      await exportScreenHD(target, `${safeName}-${suffix}.png`, {
+        scrollContainer:
+          mode === "knockout" ? bracketScrollRef.current : target,
+      });
+    } catch (err) {
+      setError(err.message || "Could not export image.");
+    } finally {
+      setExporting(false);
+    }
   };
 
   const toggleSavedTeam = (savedTeam) => {
@@ -488,8 +513,13 @@ export default function TournamentApp() {
             onRename={renameTeam}
           />
           <div className="sidebar-actions">
-            <button type="button" className="mode-btn btn-action" onClick={takeScreenshot}>
-              Save image
+            <button
+              type="button"
+              className="mode-btn btn-action"
+              onClick={takeScreenshot}
+              disabled={exporting}
+            >
+              {exporting ? "Exporting…" : "Save screenshot"}
             </button>
             <button type="button" className="btn-reset mode-btn" onClick={resetTournamentData}>
               Reset all
@@ -508,7 +538,7 @@ export default function TournamentApp() {
       )}
 
       <div className="tournament-main">
-        <main className="main-panel" ref={screenshotRef}>
+        <main className="main-panel">
           {mode === "league" && (
             <>
               {matches.length === 0 ? (
@@ -536,18 +566,29 @@ export default function TournamentApp() {
                       Standings
                     </button>
                   </div>
-                  {leagueTab === "fixtures" && (
-                    <div className="panel-card panel-card--fixtures">
-                      <h3 className="section-title">Match fixtures</h3>
-                      <LeagueMatches matches={matches} onScoreChange={handleScoreChange} />
+                  <div ref={leagueExportRef} className="export-sheet">
+                    <header className="export-sheet__header">
+                      <p className="export-sheet__eyebrow">League</p>
+                      <h2 className="export-sheet__title">{tournamentName}</h2>
+                      <p className="export-sheet__subtitle">
+                        {leagueTab === "standings" ? "Standings table" : "Match schedule"}
+                      </p>
+                    </header>
+                    <div className="export-sheet__body">
+                      {leagueTab === "fixtures" && (
+                        <div className="panel-card panel-card--fixtures">
+                          <h3 className="section-title">Match fixtures</h3>
+                          <LeagueMatches matches={matches} onScoreChange={handleScoreChange} />
+                        </div>
+                      )}
+                      {leagueTab === "standings" && (
+                        <div className="panel-card panel-card--standings">
+                          <h3 className="section-title">Standings</h3>
+                          <LeagueTable table={calculateTable()} />
+                        </div>
+                      )}
                     </div>
-                  )}
-                  {leagueTab === "standings" && (
-                    <div className="panel-card panel-card--standings">
-                      <h3 className="section-title">Standings</h3>
-                      <LeagueTable table={calculateTable()} />
-                    </div>
-                  )}
+                  </div>
                   <div className="league-content__actions">
                     <button
                       type="button"
@@ -555,6 +596,14 @@ export default function TournamentApp() {
                       onClick={() => setMatches([])}
                     >
                       Regenerate fixtures
+                    </button>
+                    <button
+                      type="button"
+                      className="mode-btn btn-action"
+                      onClick={takeScreenshot}
+                      disabled={exporting}
+                    >
+                      {exporting ? "Exporting…" : "Save screenshot"}
                     </button>
                   </div>
                 </div>
@@ -573,12 +622,24 @@ export default function TournamentApp() {
                 </div>
               ) : (
                 <>
-                  <div className="bracket-scroll">
-                    <KnockoutBracket
-                      rounds={knockoutRounds}
-                      onSelectWinner={selectWinner}
-                      onUndoWinner={undoWinner}
-                    />
+                  <div className="knockout-panel">
+                    <div ref={knockoutExportRef} className="knockout-panel__capture">
+                      <div ref={bracketScrollRef} className="bracket-scroll">
+                        <KnockoutBracket
+                          rounds={knockoutRounds}
+                          onSelectWinner={selectWinner}
+                          onUndoWinner={undoWinner}
+                        />
+                      </div>
+                      {(() => {
+                        const champion = getChampion(knockoutRounds);
+                        return champion ? (
+                          <h2 className="champion-banner knockout-panel__champion">
+                            Champion — {champion}
+                          </h2>
+                        ) : null;
+                      })()}
+                    </div>
                   </div>
                   <div className="league-content__actions">
                     <button
@@ -588,15 +649,17 @@ export default function TournamentApp() {
                     >
                       Reset bracket
                     </button>
+                    <button
+                      type="button"
+                      className="mode-btn btn-action"
+                      onClick={takeScreenshot}
+                      disabled={exporting}
+                    >
+                      {exporting ? "Exporting…" : "Save screenshot"}
+                    </button>
                   </div>
                 </>
               )}
-              {(() => {
-                const champion = getChampion(knockoutRounds);
-                return champion ? (
-                  <h2 className="champion-banner">Champion — {champion}</h2>
-                ) : null;
-              })()}
             </>
           )}
         </main>
@@ -624,8 +687,8 @@ export default function TournamentApp() {
         >
           Table
         </button>
-        <button type="button" onClick={takeScreenshot}>
-          Export
+        <button type="button" onClick={takeScreenshot} disabled={exporting}>
+          {exporting ? "…" : "Screenshot"}
         </button>
       </nav>
     </div>
