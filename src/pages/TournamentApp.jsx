@@ -81,7 +81,7 @@ export default function TournamentApp() {
   const takeScreenshot = async () => {
     if (!screenshotRef.current) return;
     const canvas = await html2canvas(screenshotRef.current, {
-      backgroundColor: "#0a0e1a",
+      backgroundColor: "#0a0a0a",
       scale: 2,
     });
     const image = canvas.toDataURL("image/png");
@@ -607,17 +607,25 @@ export default function TournamentApp() {
                 </div>
               ) : (
                 <>
-                  <div className="knockout-rounds">
-                    {knockoutRounds.map((round, rIndex) => (
-                      <div className="panel-card knockout-round" key={rIndex}>
-                        <h3 className="section-title">
-                          {knockoutRounds.length - 1 === rIndex &&
-                          knockoutRounds.at(-1).length === 1
-                            ? "Final"
-                            : `Round ${rIndex + 1}`}
-                        </h3>
+                  <div className="bracket-scroll">
+                    <div className="bracket-columns knockout-rounds">
+                    {knockoutRounds.map((round, rIndex) => {
+                      const isFinal =
+                        knockoutRounds.length - 1 === rIndex &&
+                        knockoutRounds.at(-1).length === 1;
+                      const roundLabel = isFinal
+                        ? "Final"
+                        : rIndex === knockoutRounds.length - 2 && round.length === 2
+                          ? "Semi-Final"
+                          : `Round ${rIndex + 1}`;
+                      return (
+                      <div className="bracket-round panel-card knockout-round" key={rIndex}>
+                        <h3 className="bracket-round__label">{roundLabel}</h3>
                         {round.map((m, mIndex) => (
-                          <div className="knockout-match-card" key={m.id}>
+                          <div
+                            className={`knockout-match-card ${m.winner ? "knockout-match-card--won" : ""}`}
+                            key={m.id}
+                          >
                             <span className="knockout-match-num">
                               Match {mIndex + 1}
                             </span>
@@ -660,7 +668,9 @@ export default function TournamentApp() {
                           </div>
                         ))}
                       </div>
-                    ))}
+                    );
+                    })}
+                    </div>
                   </div>
                   <div className="league-content__actions">
                     <button
@@ -686,13 +696,28 @@ export default function TournamentApp() {
       </div>
 
       <nav className="mobile-bottom-nav" aria-label="Quick actions">
-        <button type="button" onClick={() => goTo("teams")}>
+        <button
+          type="button"
+          className={view === "teams" ? "is-active" : ""}
+          onClick={() => goTo("teams")}
+        >
+          <span className="nav-icon">👕</span>
           Teams
         </button>
-        <button type="button" onClick={() => setMobileTeamsOpen(true)}>
+        <button
+          type="button"
+          className={mobileTeamsOpen ? "is-active" : ""}
+          onClick={() => setMobileTeamsOpen(true)}
+        >
+          <span className="nav-icon">✏️</span>
           Edit
         </button>
+        <button type="button" onClick={() => setLeagueTab("standings")}>
+          <span className="nav-icon">📊</span>
+          Table
+        </button>
         <button type="button" onClick={takeScreenshot}>
+          <span className="nav-icon">📸</span>
           Save
         </button>
       </nav>

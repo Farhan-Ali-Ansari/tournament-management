@@ -4,6 +4,9 @@ import { useAuth } from "../context/AuthContext";
 import AuthLayout from "../components/AuthLayout";
 import { isSupabaseConfigured } from "../lib/supabase";
 import { getAuthErrorMessage } from "../lib/authErrors";
+import { getSupabaseConfigMessage } from "../lib/supabaseConfigMessage";
+import Input from "../components/ui/Input";
+import Button from "../components/ui/Button";
 
 export default function Signup() {
   const { signUp } = useAuth();
@@ -35,17 +38,13 @@ export default function Signup() {
     try {
       const data = await signUp(email.trim(), password, displayName.trim());
 
-      // No email confirm (Supabase setting): session is returned → go straight in
       if (data?.session) {
         navigate("/", { replace: true });
         return;
       }
 
-      // Email confirm still enabled in Supabase: user created but must verify inbox
       if (data?.user) {
-        setMessage(
-          "Account created! Check your email to confirm, then sign in."
-        );
+        setMessage("Account created! Check your email to confirm, then sign in.");
         return;
       }
 
@@ -70,8 +69,7 @@ export default function Signup() {
       <form className="auth-form" onSubmit={handleSubmit}>
         {!isSupabaseConfigured && (
           <div className="auth-form__alert auth-form__alert--error" role="alert">
-            Missing <code>.env.local</code>. Copy <code>.env.example</code>, add your Supabase
-            URL and key, then run <code>npm start</code> again.
+            {getSupabaseConfigMessage()}
           </div>
         )}
         {error && (
@@ -84,58 +82,55 @@ export default function Signup() {
             {message}
           </div>
         )}
-        <label className="auth-form__field">
-          <span>Name (optional)</span>
-          <input
-            type="text"
-            autoComplete="name"
-            placeholder="Farhan"
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-          />
-        </label>
-        <label className="auth-form__field">
-          <span>Email</span>
-          <input
-            type="email"
-            autoComplete="email"
-            inputMode="email"
-            placeholder="you@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </label>
-        <label className="auth-form__field">
-          <span>Password</span>
-          <input
-            type="password"
-            autoComplete="new-password"
-            placeholder="At least 6 characters"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={6}
-          />
-        </label>
-        <label className="auth-form__field">
-          <span>Confirm password</span>
-          <input
-            type="password"
-            autoComplete="new-password"
-            placeholder="Repeat password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            required
-          />
-        </label>
-        <button
+        <Input
+          floating
+          label="Display name (optional)"
+          type="text"
+          autoComplete="name"
+          value={displayName}
+          onChange={(e) => setDisplayName(e.target.value)}
+          placeholder=" "
+        />
+        <Input
+          floating
+          label="Email"
+          type="email"
+          autoComplete="email"
+          inputMode="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          placeholder=" "
+        />
+        <Input
+          floating
+          label="Password"
+          type="password"
+          autoComplete="new-password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          minLength={6}
+          placeholder=" "
+        />
+        <Input
+          floating
+          label="Confirm password"
+          type="password"
+          autoComplete="new-password"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          required
+          placeholder=" "
+        />
+        <Button
           type="submit"
-          className="btn-primary-large auth-form__submit"
+          variant="primary"
+          size="lg"
           disabled={submitting || !isSupabaseConfigured}
         >
-          {submitting ? "Creating…" : "Sign up"}
-        </button>
+          {submitting ? "Creating…" : "Register"}
+        </Button>
       </form>
     </AuthLayout>
   );

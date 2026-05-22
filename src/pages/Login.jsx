@@ -4,6 +4,9 @@ import { useAuth } from "../context/AuthContext";
 import AuthLayout from "../components/AuthLayout";
 import { isSupabaseConfigured } from "../lib/supabase";
 import { getAuthErrorMessage } from "../lib/authErrors";
+import { getSupabaseConfigMessage } from "../lib/supabaseConfigMessage";
+import Input from "../components/ui/Input";
+import Button from "../components/ui/Button";
 
 export default function Login() {
   const { signIn, resetPassword } = useAuth();
@@ -60,8 +63,7 @@ export default function Login() {
       <form className="auth-form" onSubmit={handleSubmit}>
         {!isSupabaseConfigured && (
           <div className="auth-form__alert auth-form__alert--error" role="alert">
-            Missing <code>.env.local</code>. Copy <code>.env.example</code>, add your Supabase
-            URL and key, then run <code>npm start</code> again.
+            {getSupabaseConfigMessage()}
           </div>
         )}
         {error && (
@@ -74,43 +76,39 @@ export default function Login() {
             {message}
           </div>
         )}
-        <label className="auth-form__field">
-          <span>Email</span>
-          <input
-            type="email"
-            autoComplete="email"
-            inputMode="email"
-            placeholder="you@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </label>
-        <label className="auth-form__field">
-          <span>Password</span>
-          <input
-            type="password"
-            autoComplete="current-password"
-            placeholder="Your password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </label>
-        <button
-          type="button"
-          className="auth-form__link-btn"
-          onClick={handleForgot}
-        >
+        <Input
+          floating
+          label="Email"
+          type="email"
+          autoComplete="email"
+          inputMode="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          placeholder=" "
+        />
+        <Input
+          floating
+          label="Password"
+          type="password"
+          autoComplete="current-password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          placeholder=" "
+        />
+        <button type="button" className="auth-form__link-btn" onClick={handleForgot}>
           Forgot password?
         </button>
-        <button
+        <Button
           type="submit"
-          className="btn-primary-large auth-form__submit"
+          variant="primary"
+          size="lg"
+          className="auth-form__submit"
           disabled={submitting || !isSupabaseConfigured}
         >
           {submitting ? "Signing in…" : "Sign in"}
-        </button>
+        </Button>
       </form>
     </AuthLayout>
   );

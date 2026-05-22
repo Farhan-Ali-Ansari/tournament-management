@@ -1,4 +1,14 @@
 import { useState } from "react";
+import Button from "./ui/Button";
+
+function initials(name) {
+  return name
+    .split(/\s+/)
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
 
 export default function TeamList({ teams, onDelete, onRename }) {
   const [editingId, setEditingId] = useState(null);
@@ -23,7 +33,13 @@ export default function TeamList({ teams, onDelete, onRename }) {
 
   return (
     <div className="team-list-container">
-      {teams.length === 0 && <p className="team-list__empty">No teams added yet</p>}
+      {teams.length === 0 && (
+        <div className="empty-state" style={{ minHeight: "100px", padding: "1.5rem" }}>
+          <span aria-hidden="true">👕</span>
+          <h3>No teams yet</h3>
+          <p className="team-list__empty">Add your first team to get started.</p>
+        </div>
+      )}
 
       <ul className="team-list">
         {teams.map((team) => (
@@ -32,33 +48,44 @@ export default function TeamList({ teams, onDelete, onRename }) {
               <div className="team-item__edit">
                 <input
                   type="text"
-                  className="team-item__input"
+                  className="team-item__input ui-input"
                   value={editValue}
                   onChange={(e) => setEditValue(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && saveEdit()}
                   autoFocus
                   aria-label="Edit team name"
                 />
-                <button type="button" className="team-item__save-btn" onClick={saveEdit}>Save</button>
-                <button type="button" className="team-item__cancel-btn" onClick={cancelEdit}>Cancel</button>
+                <Button variant="primary" size="sm" onClick={saveEdit}>
+                  Save
+                </Button>
+                <Button variant="secondary" size="sm" onClick={cancelEdit}>
+                  Cancel
+                </Button>
               </div>
             ) : (
               <>
-                <span
-                  className="team-item__name team-item__name--editable"
-                  onClick={() => onRename && startEdit(team)}
-                  title={onRename ? "Click to edit name" : undefined}
-                >
-                  {team.name}
-                </span>
-                <button
-                  type="button"
-                  className="team-item__delete-btn"
-                  onClick={() => onDelete(team.id)}
-                  aria-label={`Delete ${team.name}`}
-                >
-                  Delete
-                </button>
+                <div className="team-item__row">
+                  <span className="team-avatar" aria-hidden="true">
+                    {initials(team.name)}
+                  </span>
+                  <span
+                    className="team-item__name team-item__name--editable"
+                    onClick={() => onRename && startEdit(team)}
+                    title={onRename ? "Click to edit name" : undefined}
+                  >
+                    {team.name}
+                  </span>
+                </div>
+                {onDelete && (
+                  <button
+                    type="button"
+                    className="team-item__delete-btn"
+                    onClick={() => onDelete(team.id)}
+                    aria-label={`Delete ${team.name}`}
+                  >
+                    Delete
+                  </button>
+                )}
               </>
             )}
           </li>

@@ -1,7 +1,9 @@
+import PageShell from "./ui/PageShell";
+
 export default function AuthLayout({ title, subtitle, children, footer }) {
   return (
-    <div className="auth-page">
-      <div className="auth-page__card">
+    <PageShell className="auth-page">
+      <div className="auth-page__card ui-card ui-card--glass">
         <div className="auth-page__brand">
           <span className="auth-page__logo" aria-hidden="true">
             🏆
@@ -12,6 +14,6 @@ export default function AuthLayout({ title, subtitle, children, footer }) {
         {children}
         {footer && <div className="auth-page__footer">{footer}</div>}
       </div>
-    </div>
+    </PageShell>
   );
 }

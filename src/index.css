@@ -1,4 +1,4 @@
-/* Global base – overridden by App.css design tokens */
+/* Global base — design tokens in theme.css via App.css */
 *,
 *::before,
 *::after {
@@ -12,18 +12,20 @@ html {
 
 body {
   margin: 0;
-  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  background: #0a0a0a;
+  color: #f5f5f0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
 }
 
-/* Focus ring for accessibility */
 :focus-visible {
-  outline: 2px solid currentColor;
+  outline: 2px solid #f59e0b;
   outline-offset: 2px;
 }

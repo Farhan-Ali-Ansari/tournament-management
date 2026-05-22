@@ -2,7 +2,9 @@ import { isSupabaseConfigured } from "./supabase";
 
 export function getAuthErrorMessage(err) {
   if (!isSupabaseConfigured) {
-    return "Supabase is not configured. Copy .env.example to .env.local, add your keys, then restart npm start.";
+    return process.env.NODE_ENV === "production"
+      ? "Supabase is not configured for this deployment. Add REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY in Vercel (or .env.production), then redeploy."
+      : "Supabase is not configured. Copy .env.example to .env.local, add your keys, then restart npm start.";
   }
 
   const msg = err?.message || "";

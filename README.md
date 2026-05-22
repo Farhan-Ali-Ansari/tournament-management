@@ -43,6 +43,19 @@ npm start
 
 Open [http://localhost:3000](http://localhost:3000).
 
+### 4. Deploy on Vercel
+
+Create React App reads `REACT_APP_*` variables **at build time**, not from `.env.local` on the server (that file is not deployed).
+
+This repo includes [`.env.production`](.env.production) so Vercel builds pick up Supabase automatically. After you push, trigger a **new deployment** (or redeploy from the Vercel dashboard) so the build runs again.
+
+Alternatively, in Vercel → **Project → Settings → Environment Variables**, add:
+
+- `REACT_APP_SUPABASE_URL`
+- `REACT_APP_SUPABASE_ANON_KEY`
+
+Apply to **Production** (and Preview if you use preview URLs), then redeploy.
+
 ## App flow
 
 1. **Sign up** or **Sign in**
