@@ -32,6 +32,7 @@ export function AuthProvider({ children }) {
         : undefined,
     });
     if (error) throw error;
+    if (data.session?.user) setUser(data.session.user);
     return data;
   };
 
@@ -41,6 +42,7 @@ export function AuthProvider({ children }) {
       password,
     });
     if (error) throw error;
+    if (data.session?.user) setUser(data.session.user);
     return data;
   };
 

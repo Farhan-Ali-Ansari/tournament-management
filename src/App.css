@@ -1060,13 +1060,6 @@ body {
     align-items: stretch;
   }
 
-  .tournament-list__item {
-    flex-direction: column;
-  }
-
-  .tournament-card__delete {
-    width: 100%;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

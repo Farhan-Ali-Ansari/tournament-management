@@ -81,10 +81,9 @@ export default function SavedTeamsManager() {
   };
 
   return (
-    <section className="panel-card dashboard__teams-panel ui-card ui-card--glass">
-      <h2 className="dashboard__section-title">My Teams</h2>
-      <p className="dashboard__section-hint">
-        Saved for your account. Pick them when you create any tournament.
+    <section className="teams-page panel-card ui-card ui-card--glass">
+      <p className="teams-page__hint">
+        Saved to your account. Reuse them whenever you set up a tournament.
       </p>
       {error && (
         <div className="auth-form__alert auth-form__alert--error" role="alert">

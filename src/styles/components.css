@@ -107,23 +107,6 @@
   }
 }
 
-.ui-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.2rem 0.65rem;
-  border-radius: var(--radius-full);
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.ui-badge--outline {
-  border: 1px solid var(--gold-primary);
-  color: var(--gold-light);
-  background: var(--gold-muted);
-}
-
 .ui-field {
   display: flex;
   flex-direction: column;
@@ -207,27 +190,6 @@
 /* transform on ancestors breaks position:fixed/sticky on sidebars */
 .page-shell {
   transform: none;
-}
-
-.skeleton {
-  background: linear-gradient(
-    90deg,
-    var(--bg-card) 0%,
-    var(--bg-card-alt) 50%,
-    var(--bg-card) 100%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.4s ease infinite;
-  border-radius: var(--radius-md);
-}
-
-@keyframes shimmer {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
 }
 
 .app-loading {

@@ -52,10 +52,10 @@ export default function Login() {
 
   return (
     <AuthLayout
-      title=""
-      subtitle="Made by Farhan Ali"
+      title="Welcome back"
+      subtitle="Sign in to your tournament workspace"
       footer={
-        <p className="newhere">
+        <p>
           New here? <Link to="/signup">Create an account</Link>
         </p>
       }

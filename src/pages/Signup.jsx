@@ -61,7 +61,7 @@ export default function Signup() {
       title="Create account"
       subtitle=""
       footer={
-        <p className="alreadyacc">
+        <p>
           Already have an account? <Link to="/login">Sign in</Link>
         </p>
       }

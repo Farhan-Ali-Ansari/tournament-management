@@ -4,6 +4,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
+import MyTeams from "./pages/MyTeams";
 import TournamentApp from "./pages/TournamentApp";
 import TournamentRedirect from "./components/TournamentRedirect";
 import "./App.css";
@@ -20,6 +21,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/teams"
+            element={
+              <ProtectedRoute>
+                <MyTeams />
               </ProtectedRoute>
             }
           />
