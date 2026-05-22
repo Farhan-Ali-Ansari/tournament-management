@@ -52,8 +52,8 @@ export default function Login() {
 
   return (
     <AuthLayout
-      title="Welcome back"
-      subtitle="Sign in to your tournament workspace"
+      title=""
+      subtitle="Made by Farhan"
       footer={
         <p>
           New here? <Link to="/signup">Create an account</Link>

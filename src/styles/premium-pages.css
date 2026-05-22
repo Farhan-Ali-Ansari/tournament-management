@@ -34,11 +34,6 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 52px;
-  height: 52px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-border);
-  background: var(--gold-muted);
   color: var(--gold-light);
   font-family: var(--font-display);
   font-size: 1.5rem;
