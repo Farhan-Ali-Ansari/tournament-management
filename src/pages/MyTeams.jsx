@@ -4,7 +4,7 @@ import SavedTeamsManager from "../components/SavedTeamsManager";
 export default function MyTeams() {
   return (
     <DashboardLayout
-      title="My Teams"
+      title="Saved Teams"
       subtitle="Your roster"
     >
       <SavedTeamsManager />

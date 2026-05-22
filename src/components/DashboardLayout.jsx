@@ -34,7 +34,7 @@ export default function DashboardLayout({ children, title, subtitle }) {
         }
         onClick={closeDrawer}
       >
-        My Teams
+        Saved Teams
       </NavLink>
       <button
         type="button"
