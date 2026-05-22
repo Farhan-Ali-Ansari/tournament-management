@@ -81,7 +81,7 @@ export default function TournamentApp() {
   const takeScreenshot = async () => {
     if (!screenshotRef.current) return;
     const canvas = await html2canvas(screenshotRef.current, {
-      backgroundColor: "#0a0a0a",
+      backgroundColor: "#08080a",
       scale: 2,
     });
     const image = canvas.toDataURL("image/png");
@@ -244,7 +244,7 @@ export default function TournamentApp() {
       }
     });
     return Object.entries(table)
-      .sort(([, a], [, b]) => b.points - a.points || b.won - a.won)
+      .sort(([, a], [, b]) => b.won - a.won || a.lost - b.lost)
       .reduce((obj, [key, value]) => {
         obj[key] = value;
         return obj;
@@ -390,7 +390,6 @@ export default function TournamentApp() {
               onClick={() => pickMode("league")}
               disabled={isStarted}
             >
-              🏆<br />
               League
             </button>
             <button
@@ -399,7 +398,6 @@ export default function TournamentApp() {
               onClick={() => pickMode("knockout")}
               disabled={isStarted}
             >
-              🥊<br />
               Knockout
             </button>
           </div>
@@ -502,46 +500,49 @@ export default function TournamentApp() {
         </div>
       )}
 
-      <div className="content-grid">
-        <aside className={`sidebar-panel ${mobileTeamsOpen ? "sidebar-panel--open" : ""}`}>
-          <div className="panel-card">
-            <div className="sidebar-panel__head">
-              <h3 className="section-title">Teams</h3>
-              <button
-                type="button"
-                className="sidebar-panel__close"
-                onClick={() => setMobileTeamsOpen(false)}
-                aria-label="Close teams panel"
-              >
-                ×
-              </button>
-            </div>
-            <TeamForm onAddTeam={addNewTeam} />
-            <TeamList
-              teams={teams}
-              onDelete={removeFromTournament}
-              onRename={renameTeam}
-            />
-            <div className="sidebar-actions">
-              <button type="button" className="mode-btn btn-action" onClick={takeScreenshot}>
-                📸 Screenshot
-              </button>
-              <button type="button" className="btn-reset mode-btn" onClick={resetTournamentData}>
-                Reset tournament
-              </button>
-            </div>
+      <aside
+        className={`sidebar-panel ${mobileTeamsOpen ? "sidebar-panel--open" : ""}`}
+        aria-label="Teams roster"
+      >
+        <div className="panel-card sidebar-panel__inner">
+          <div className="sidebar-panel__head">
+            <h3 className="section-title">Teams</h3>
+            <button
+              type="button"
+              className="sidebar-panel__close"
+              onClick={() => setMobileTeamsOpen(false)}
+              aria-label="Close teams panel"
+            >
+              ×
+            </button>
           </div>
-        </aside>
-
-        {mobileTeamsOpen && (
-          <button
-            type="button"
-            className="sidebar-overlay"
-            aria-label="Close teams panel"
-            onClick={() => setMobileTeamsOpen(false)}
+          <TeamForm onAddTeam={addNewTeam} />
+          <TeamList
+            teams={teams}
+            onDelete={removeFromTournament}
+            onRename={renameTeam}
           />
-        )}
+          <div className="sidebar-actions">
+            <button type="button" className="mode-btn btn-action" onClick={takeScreenshot}>
+              Save image
+            </button>
+            <button type="button" className="btn-reset mode-btn" onClick={resetTournamentData}>
+              Reset all
+            </button>
+          </div>
+        </div>
+      </aside>
 
+      {mobileTeamsOpen && (
+        <button
+          type="button"
+          className="sidebar-overlay"
+          aria-label="Close teams panel"
+          onClick={() => setMobileTeamsOpen(false)}
+        />
+      )}
+
+      <div className="tournament-main">
         <main className="main-panel" ref={screenshotRef}>
           {mode === "league" && (
             <>
@@ -629,41 +630,50 @@ export default function TournamentApp() {
                             <span className="knockout-match-num">
                               Match {mIndex + 1}
                             </span>
-                            <span className="knockout-match-teams">
-                              {m.teamA}{" "}
-                              <span className="vs-label">VS</span> {m.teamB}
-                            </span>
-                            {!m.winner && m.teamB !== "BYE" && (
-                              <div className="knockout-winner-btns">
-                                <button
-                                  type="button"
-                                  className="mode-btn btn-team-a"
-                                  onClick={() => selectWinner(rIndex, m.id, m.teamA)}
-                                >
-                                  {m.teamA}
-                                </button>
-                                <button
-                                  type="button"
-                                  className="mode-btn btn-team-b"
-                                  onClick={() => selectWinner(rIndex, m.id, m.teamB)}
-                                >
-                                  {m.teamB}
-                                </button>
-                              </div>
-                            )}
-                            {m.winner && (
-                              <div className="knockout-winner-row">
-                                <strong className="knockout-winner-text">
-                                  Winner: {m.winner}
-                                </strong>
-                                <button
-                                  type="button"
-                                  className="btn-undo mode-btn"
-                                  onClick={() => undoWinner(rIndex, m.id)}
-                                >
-                                  Undo
-                                </button>
-                              </div>
+                            {m.teamB === "BYE" ? (
+                              <p className="knockout-match-bye">
+                                <span className="knockout-team-name is-winner">{m.teamA}</span>
+                                <span className="vs-label">advances (bye)</span>
+                              </p>
+                            ) : (
+                              <>
+                                <div className="knockout-match-teams">
+                                  <button
+                                    type="button"
+                                    className={`knockout-team-name ${
+                                      m.winner === m.teamA ? "is-winner" : ""
+                                    } ${m.winner && m.winner !== m.teamA ? "is-loser" : ""}`}
+                                    onClick={() =>
+                                      !m.winner && selectWinner(rIndex, m.id, m.teamA)
+                                    }
+                                    disabled={!!m.winner}
+                                  >
+                                    {m.teamA}
+                                  </button>
+                                  <span className="vs-label">vs</span>
+                                  <button
+                                    type="button"
+                                    className={`knockout-team-name ${
+                                      m.winner === m.teamB ? "is-winner" : ""
+                                    } ${m.winner && m.winner !== m.teamB ? "is-loser" : ""}`}
+                                    onClick={() =>
+                                      !m.winner && selectWinner(rIndex, m.id, m.teamB)
+                                    }
+                                    disabled={!!m.winner}
+                                  >
+                                    {m.teamB}
+                                  </button>
+                                </div>
+                                {m.winner && (
+                                  <button
+                                    type="button"
+                                    className="btn-undo"
+                                    onClick={() => undoWinner(rIndex, m.id)}
+                                  >
+                                    Undo
+                                  </button>
+                                )}
+                              </>
                             )}
                           </div>
                         ))}
@@ -687,7 +697,7 @@ export default function TournamentApp() {
                 knockoutRounds.at(-1).length === 1 &&
                 knockoutRounds.at(-1)[0].winner && (
                   <h2 className="champion-banner">
-                    🏆 {knockoutRounds.at(-1)[0].winner} 🏆
+                    Champion — {knockoutRounds.at(-1)[0].winner}
                   </h2>
                 )}
             </>
@@ -701,7 +711,6 @@ export default function TournamentApp() {
           className={view === "teams" ? "is-active" : ""}
           onClick={() => goTo("teams")}
         >
-          <span className="nav-icon">👕</span>
           Teams
         </button>
         <button
@@ -709,16 +718,17 @@ export default function TournamentApp() {
           className={mobileTeamsOpen ? "is-active" : ""}
           onClick={() => setMobileTeamsOpen(true)}
         >
-          <span className="nav-icon">✏️</span>
-          Edit
+          Roster
         </button>
-        <button type="button" onClick={() => setLeagueTab("standings")}>
-          <span className="nav-icon">📊</span>
+        <button
+          type="button"
+          className={leagueTab === "standings" ? "is-active" : ""}
+          onClick={() => setLeagueTab("standings")}
+        >
           Table
         </button>
         <button type="button" onClick={takeScreenshot}>
-          <span className="nav-icon">📸</span>
-          Save
+          Export
         </button>
       </nav>
     </div>

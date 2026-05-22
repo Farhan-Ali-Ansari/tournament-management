@@ -34,11 +34,7 @@ export default function TeamList({ teams, onDelete, onRename }) {
   return (
     <div className="team-list-container">
       {teams.length === 0 && (
-        <div className="empty-state" style={{ minHeight: "100px", padding: "1.5rem" }}>
-          <span aria-hidden="true">👕</span>
-          <h3>No teams yet</h3>
-          <p className="team-list__empty">Add your first team to get started.</p>
-        </div>
+        <p className="team-list__empty">No teams yet. Add one above.</p>
       )}
 
       <ul className="team-list">

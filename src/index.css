@@ -1,4 +1,4 @@
-/* Global base — design tokens in theme.css via App.css */
+/* Global base — tokens in theme.css via App.css */
 *,
 *::before,
 *::after {
@@ -8,24 +8,40 @@
 html {
   overflow-x: hidden;
   scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
   margin: 0;
-  font-family: "Inter", system-ui, -apple-system, sans-serif;
-  background: #0a0a0a;
-  color: #f5f5f0;
+  font-family: var(--font-body, "Outfit", system-ui, sans-serif);
+  background: var(--bg-dark, #08080a);
+  color: var(--text-primary, #f4f3ef);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
+  min-height: 100dvh;
   overflow-x: hidden;
+  line-height: 1.5;
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
+  font-family: ui-monospace, "Cascadia Code", monospace;
 }
 
 :focus-visible {
-  outline: 2px solid #f59e0b;
+  outline: 2px solid var(--gold-primary, #c9a227);
   outline-offset: 2px;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+img,
+svg {
+  max-width: 100%;
+  height: auto;
 }

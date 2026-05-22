@@ -59,9 +59,9 @@ export default function Signup() {
   return (
     <AuthLayout
       title="Create account"
-      subtitle="Start managing leagues and knockouts"
+      subtitle=""
       footer={
-        <p>
+        <p className="alreadyacc">
           Already have an account? <Link to="/login">Sign in</Link>
         </p>
       }

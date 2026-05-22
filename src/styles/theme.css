@@ -1,35 +1,36 @@
-/* Jackaroo — Premium Gold Design Tokens */
+/* Jackaroo — Luxury mobile-first design tokens */
 :root {
-  /* Backgrounds */
-  --bg-dark: #0a0a0a;
-  --bg-dark-elevated: #111111;
-  --bg-card: #1a1a1a;
-  --bg-card-alt: #2a2a2a;
-  --bg-nav: #0d0d0d;
-  --bg-input: #111111;
-  --bg-overlay: rgba(0, 0, 0, 0.72);
+  /* Surfaces */
+  --bg-dark: #08080a;
+  --bg-dark-elevated: #101014;
+  --bg-card: #16161c;
+  --bg-card-alt: #1e1e26;
+  --bg-nav: #0c0c10;
+  --bg-input: #121218;
+  --bg-overlay: rgba(4, 4, 8, 0.78);
 
-  /* Gold palette */
-  --gold-primary: #f59e0b;
-  --gold-dark: #d97706;
-  --gold-light: #fbbf24;
-  --gold-muted: rgba(245, 158, 11, 0.15);
-  --gold-glow: rgba(245, 158, 11, 0.35);
-  --gold-shadow: 0 0 20px rgba(245, 158, 11, 0.15);
-  --gold-shadow-strong: 0 0 32px rgba(245, 158, 11, 0.28);
-  --gradient-gold: linear-gradient(135deg, #fbbf24 0%, #f59e0b 45%, #d97706 100%);
-  --gradient-hero: linear-gradient(180deg, rgba(245, 158, 11, 0.12) 0%, transparent 55%),
-    radial-gradient(ellipse 90% 60% at 50% -10%, rgba(251, 191, 36, 0.18), transparent);
+  /* Champagne gold */
+  --gold-primary: #c9a227;
+  --gold-dark: #a6851f;
+  --gold-light: #e8d48b;
+  --gold-muted: rgba(201, 162, 39, 0.12);
+  --gold-glow: rgba(201, 162, 39, 0.32);
+  --gold-shadow: 0 4px 24px rgba(201, 162, 39, 0.12);
+  --gold-shadow-strong: 0 8px 40px rgba(201, 162, 39, 0.22);
+  --gradient-gold: linear-gradient(135deg, #e8d48b 0%, #c9a227 50%, #a6851f 100%);
+  --gradient-hero:
+    radial-gradient(ellipse 120% 80% at 50% -20%, rgba(201, 162, 39, 0.14), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 100% 0%, rgba(201, 162, 39, 0.06), transparent 50%);
 
   /* Text */
-  --text-primary: #f5f5f0;
-  --text-muted: #a8a8a0;
-  --text-dim: #6b6b65;
+  --text-primary: #f4f3ef;
+  --text-muted: #9a9890;
+  --text-dim: #5c5a56;
 
-  /* Semantic aliases (legacy class compatibility) */
+  /* Legacy aliases */
   --color-bg-app: var(--bg-dark);
   --color-bg-app-mid: var(--bg-dark-elevated);
-  --color-bg-panel: rgba(26, 26, 26, 0.72);
+  --color-bg-panel: rgba(22, 22, 28, 0.78);
   --color-bg-panel-solid: var(--bg-card);
   --color-bg-input: var(--bg-input);
   --color-primary: var(--gold-primary);
@@ -39,44 +40,44 @@
   --color-accent-hover: var(--gold-primary);
   --color-accent-dark: var(--gold-dark);
   --color-accent-glow: var(--gold-muted);
-  --color-danger: #ef4444;
-  --color-danger-hover: #dc2626;
-  --color-danger-glow: rgba(239, 68, 68, 0.25);
+  --color-danger: #e85d5d;
+  --color-danger-hover: #c94a4a;
+  --color-danger-glow: rgba(232, 93, 93, 0.2);
   --color-text: var(--text-primary);
   --color-text-muted: var(--text-muted);
   --color-text-dim: var(--text-dim);
-  --color-border: rgba(245, 158, 11, 0.18);
-  --color-border-focus: rgba(245, 158, 11, 0.55);
+  --color-border: rgba(201, 162, 39, 0.14);
+  --color-border-focus: rgba(201, 162, 39, 0.45);
   --color-champion-gold: var(--gold-light);
-  --color-champion-amber: var(--gold-dark);
+  --color-champion-amber: var(--gold-primary);
   --gradient-mesh: var(--gradient-hero);
 
   /* Typography */
-  --font-body: "Inter", system-ui, -apple-system, sans-serif;
-  --font-display: "Playfair Display", Georgia, serif;
+  --font-body: "Outfit", system-ui, -apple-system, sans-serif;
+  --font-display: "Cormorant Garamond", Georgia, serif;
   --font-family: var(--font-body);
 
   /* Spacing */
   --space-xs: 0.25rem;
   --space-sm: 0.5rem;
   --space-md: 1rem;
-  --space-lg: 1.5rem;
-  --space-xl: 2rem;
+  --space-lg: 1.25rem;
+  --space-xl: 1.75rem;
   --space-2xl: 2.5rem;
 
   /* Radius & effects */
   --radius-sm: 10px;
   --radius-md: 14px;
-  --radius-lg: 18px;
-  --radius-xl: 22px;
+  --radius-lg: 20px;
+  --radius-xl: 24px;
   --radius-full: 9999px;
-  --shadow-sm: 0 2px 12px rgba(0, 0, 0, 0.35);
-  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.5);
-  --shadow-glow-primary: var(--gold-shadow);
-  --shadow-glow-accent: var(--gold-shadow-strong);
-  --glass-blur: blur(16px);
-  --transition: 0.3s ease;
+  --shadow-sm: 0 2px 16px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 8px 32px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.55);
+  --glass-blur: blur(20px);
+  --transition: 0.25s ease;
   --transition-smooth: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   --tap-min: 48px;
+  --header-h: 56px;
+  --nav-h: 64px;
 }

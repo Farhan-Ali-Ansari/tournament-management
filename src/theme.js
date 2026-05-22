@@ -1,19 +1,19 @@
 /** Design tokens (mirror of theme.css) for use in JS when needed */
 export const theme = {
   colors: {
-    bgDark: "#0a0a0a",
-    bgElevated: "#111111",
-    bgCard: "#1a1a1a",
-    bgCardAlt: "#2a2a2a",
-    goldPrimary: "#f59e0b",
-    goldDark: "#d97706",
-    goldLight: "#fbbf24",
-    textPrimary: "#f5f5f0",
-    textMuted: "#a8a8a0",
+    bgDark: "#08080a",
+    bgElevated: "#101014",
+    bgCard: "#16161c",
+    bgCardAlt: "#1e1e26",
+    goldPrimary: "#c9a227",
+    goldDark: "#a6851f",
+    goldLight: "#e8d48b",
+    textPrimary: "#f4f3ef",
+    textMuted: "#9a9890",
   },
   fonts: {
-    body: '"Inter", system-ui, sans-serif',
-    display: '"Playfair Display", Georgia, serif',
+    body: '"Outfit", system-ui, sans-serif',
+    display: '"Cormorant Garamond", Georgia, serif',
   },
 };
 
