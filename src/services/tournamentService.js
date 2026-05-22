@@ -22,7 +22,7 @@ export async function fetchTournament(id) {
   return data;
 }
 
-export async function createTournament(userId, name = "My Tournament") {
+export async function createTournament(userId, name = "") {
   const { data, error } = await supabase
     .from("tournaments")
     .insert({

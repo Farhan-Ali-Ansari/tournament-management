@@ -5,6 +5,8 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import MyTeams from "./pages/MyTeams";
+import Guide from "./pages/Guide";
+import BuyMeACoffee from "./pages/BuyMeACoffee";
 import TournamentApp from "./pages/TournamentApp";
 import TournamentRedirect from "./components/TournamentRedirect";
 import "./App.css";
@@ -29,6 +31,22 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <MyTeams />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/guide"
+            element={
+              <ProtectedRoute>
+                <Guide />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/coffee"
+            element={
+              <ProtectedRoute>
+                <BuyMeACoffee />
               </ProtectedRoute>
             }
           />

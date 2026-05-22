@@ -36,6 +36,24 @@ export default function DashboardLayout({ children, title, subtitle }) {
       >
         Saved Teams
       </NavLink>
+      <NavLink
+        to="/guide"
+        className={({ isActive }) =>
+          `nav-drawer__link ${isActive ? "is-active" : ""}`
+        }
+        onClick={closeDrawer}
+      >
+        Guide
+      </NavLink>
+      <NavLink
+        to="/coffee"
+        className={({ isActive }) =>
+          `nav-drawer__link nav-drawer__link--coffee ${isActive ? "is-active" : ""}`
+        }
+        onClick={closeDrawer}
+      >
+        Buy me a coffee
+      </NavLink>
       <button
         type="button"
         className="nav-drawer__link nav-drawer__link--muted"
@@ -114,6 +132,12 @@ export default function DashboardLayout({ children, title, subtitle }) {
           </NavLink>
           <NavLink to="/teams" className={({ isActive }) => (isActive ? "is-active" : "")}>
             Teams
+          </NavLink>
+          <NavLink to="/guide" className={({ isActive }) => (isActive ? "is-active" : "")}>
+            Guide
+          </NavLink>
+          <NavLink to="/coffee" className={({ isActive }) => (isActive ? "is-active" : "")}>
+            Coffee
           </NavLink>
         </nav>
       </div>

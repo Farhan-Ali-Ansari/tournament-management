@@ -75,6 +75,23 @@ export default function TournamentApp() {
     if (v) setView(v);
   }, [pathView]);
 
+  // Horizontal scroll stays on .bracket-scroll; forward vertical wheel to the page.
+  useEffect(() => {
+    const el = bracketScrollRef.current;
+    if (!el || view !== "game" || mode !== "knockout" || knockoutRounds.length === 0) {
+      return undefined;
+    }
+
+    const onWheel = (e) => {
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+      window.scrollBy({ top: e.deltaY, left: 0 });
+      e.preventDefault();
+    };
+
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [view, mode, knockoutRounds.length]);
+
   const goTo = (nextView) => {
     setView(nextView);
     navigate(`/tournament/${tournamentId}/${nextView}`);
@@ -358,7 +375,7 @@ export default function TournamentApp() {
               className="team-form__input"
               value={tournamentName}
               onChange={(e) => setTournamentName(e.target.value)}
-              placeholder="My Tournament"
+              placeholder="Enter Tournament Name"
             />
           </label>
           <h2 className="section-title wizard-step-title">Step 1: Choose format</h2>
@@ -513,6 +530,20 @@ export default function TournamentApp() {
             onRename={renameTeam}
           />
           <div className="sidebar-actions">
+            <button
+              type="button"
+              className="mode-btn"
+              onClick={() => navigate("/guide")}
+            >
+              Concierge guide
+            </button>
+            <button
+              type="button"
+              className="mode-btn mode-btn--coffee"
+              onClick={() => navigate("/coffee")}
+            >
+              Buy me a coffee
+            </button>
             <button
               type="button"
               className="mode-btn btn-action"
@@ -680,15 +711,22 @@ export default function TournamentApp() {
         >
           Roster
         </button>
+        {mode === "league" && (
+          <button
+            type="button"
+            className={leagueTab === "standings" ? "is-active" : ""}
+            onClick={() => setLeagueTab("standings")}
+          >
+            Table
+          </button>
+        )}
         <button
           type="button"
-          className={leagueTab === "standings" ? "is-active" : ""}
-          onClick={() => setLeagueTab("standings")}
+          onClick={takeScreenshot}
+          disabled={exporting}
+          aria-label="Save screenshot"
         >
-          Table
-        </button>
-        <button type="button" onClick={takeScreenshot} disabled={exporting}>
-          {exporting ? "…" : "Screenshot"}
+          {exporting ? "…" : "Export"}
         </button>
       </nav>
     </div>
