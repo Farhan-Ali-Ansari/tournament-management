@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchTournament, updateTournament } from "../services/tournamentService";
+import { MODES } from "../lib/tournamentModes";
+import { decodeFromDatabase, encodeForDatabase } from "../lib/tournamentPersistence";
 
 const SAVE_DEBOUNCE_MS = 800;
 
@@ -7,9 +9,9 @@ export function useTournamentData(tournamentId) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [tournamentName, setTournamentName] = useState("My Tournament");
+  const [tournamentName, setTournamentName] = useState("");
   const [teams, setTeams] = useState([]);
-  const [mode, setMode] = useState("league");
+  const [mode, setMode] = useState(MODES.LEAGUE);
   const [matches, setMatches] = useState([]);
   const [knockoutRounds, setKnockoutRounds] = useState([]);
   const saveTimer = useRef(null);
@@ -26,13 +28,12 @@ export function useTournamentData(tournamentId) {
       try {
         const row = await fetchTournament(tournamentId);
         if (cancelled) return;
-        setTournamentName(row.name ?? "My Tournament");
-        setTeams(Array.isArray(row.teams) ? row.teams : []);
-        setMode(row.mode === "knockout" ? "knockout" : "league");
-        setMatches(Array.isArray(row.matches) ? row.matches : []);
-        setKnockoutRounds(
-          Array.isArray(row.knockout_rounds) ? row.knockout_rounds : []
-        );
+        const decoded = decodeFromDatabase(row);
+        setTournamentName(decoded.name);
+        setTeams(decoded.teams);
+        setMode(decoded.mode);
+        setMatches(decoded.matches);
+        setKnockoutRounds(decoded.knockout_rounds);
       } catch (err) {
         if (!cancelled) setError(err.message || "Failed to load tournament");
       } finally {
@@ -50,11 +51,11 @@ export function useTournamentData(tournamentId) {
   }, [tournamentId]);
 
   const persist = useCallback(
-    async (payload) => {
+    async (appState) => {
       if (!tournamentId || !readyToSave.current) return;
       setSaving(true);
       try {
-        await updateTournament(tournamentId, payload);
+        await updateTournament(tournamentId, encodeForDatabase(appState));
       } catch (err) {
         setError(err.message || "Failed to save");
       } finally {
@@ -65,9 +66,9 @@ export function useTournamentData(tournamentId) {
   );
 
   const scheduleSave = useCallback(
-    (payload) => {
+    (appState) => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
-      saveTimer.current = setTimeout(() => persist(payload), SAVE_DEBOUNCE_MS);
+      saveTimer.current = setTimeout(() => persist(appState), SAVE_DEBOUNCE_MS);
     },
     [persist]
   );

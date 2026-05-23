@@ -7,12 +7,22 @@ import TournamentTeamPicker from "../components/TournamentTeamPicker";
 import LeagueMatches from "../components/LeagueMatches";
 import LeagueTable from "../components/LeagueTable";
 import KnockoutBracket from "../components/KnockoutBracket";
+import CustomMatchBuilder from "../components/CustomMatchBuilder";
+import CustomKnockoutBuilder from "../components/CustomKnockoutBuilder";
+import LeagueTeamDetailModal from "../components/LeagueTeamDetailModal";
 import {
   buildFullBracket,
+  buildBracketFromRound0,
   setMatchWinner,
   clearMatchWinner,
   getChampion,
 } from "../lib/knockoutBracket";
+import {
+  MODES,
+  getModeLabel,
+  isLeagueMode,
+  isKnockoutMode,
+} from "../lib/tournamentModes";
 import { useAuth } from "../context/AuthContext";
 import { useSavedTeams } from "../hooks/useSavedTeams";
 import { useTournamentData } from "../hooks/useTournamentData";
@@ -24,6 +34,10 @@ const VIEW_FROM_PATH = {
   teams: "teams",
   game: "game",
 };
+
+function hasTournamentName(name) {
+  return Boolean(name?.trim());
+}
 
 export default function TournamentApp() {
   const { id: tournamentId } = useParams();
@@ -41,6 +55,9 @@ export default function TournamentApp() {
 
   const [view, setView] = useState(initialView);
   const [leagueTab, setLeagueTab] = useState("fixtures");
+  const [detailTeam, setDetailTeam] = useState(null);
+  const [draftLeagueMatches, setDraftLeagueMatches] = useState([]);
+  const [draftKnockoutPairings, setDraftKnockoutPairings] = useState([]);
 
   const {
     loading,
@@ -78,7 +95,7 @@ export default function TournamentApp() {
   // Horizontal scroll stays on .bracket-scroll; forward vertical wheel to the page.
   useEffect(() => {
     const el = bracketScrollRef.current;
-    if (!el || view !== "game" || mode !== "knockout" || knockoutRounds.length === 0) {
+    if (!el || view !== "game" || !isKnockoutMode(mode) || knockoutRounds.length === 0) {
       return undefined;
     }
 
@@ -102,6 +119,8 @@ export default function TournamentApp() {
     setMode(selectedMode);
     setMatches([]);
     setKnockoutRounds([]);
+    setDraftLeagueMatches([]);
+    setDraftKnockoutPairings([]);
     setError("");
   };
 
@@ -109,10 +128,10 @@ export default function TournamentApp() {
     let target = null;
     let suffix = "tournament";
 
-    if (mode === "knockout" && knockoutRounds.length > 0 && knockoutExportRef.current) {
+    if (isKnockoutMode(mode) && knockoutRounds.length > 0 && knockoutExportRef.current) {
       target = knockoutExportRef.current;
       suffix = "knockout-bracket";
-    } else if (mode === "league" && matches.length > 0 && leagueExportRef.current) {
+    } else if (isLeagueMode(mode) && matches.length > 0 && leagueExportRef.current) {
       target = leagueExportRef.current;
       suffix = leagueTab === "standings" ? "league-table" : "league-fixtures";
     }
@@ -131,7 +150,7 @@ export default function TournamentApp() {
         .slice(0, 48);
       await exportScreenHD(target, `${safeName}-${suffix}.png`, {
         scrollContainer:
-          mode === "knockout" ? bracketScrollRef.current : target,
+          isKnockoutMode(mode) ? bracketScrollRef.current : target,
       });
     } catch (err) {
       setError(err.message || "Could not export image.");
@@ -235,7 +254,7 @@ export default function TournamentApp() {
     }
     setError("");
     setKnockoutRounds([]);
-    setMode("league");
+    setMode(MODES.LEAGUE);
     const list = [];
     for (let i = 0; i < teams.length; i++) {
       for (let j = i + 1; j < teams.length; j++) {
@@ -293,7 +312,7 @@ export default function TournamentApp() {
       }
     });
     return Object.entries(table)
-      .sort(([, a], [, b]) => b.won - a.won || a.lost - b.lost)
+      .sort(([, a], [, b]) => b.won - a.won || a.lost - b.lost || b.played - a.played)
       .reduce((obj, [key, value]) => {
         obj[key] = value;
         return obj;
@@ -304,8 +323,28 @@ export default function TournamentApp() {
     if (teams.length < 2) return setError("Need at least 2 teams.");
     setError("");
     setMatches([]);
-    setMode("knockout");
+    setMode(MODES.KNOCKOUT);
     setKnockoutRounds(buildFullBracket(teams));
+  };
+
+  const startCustomLeague = () => {
+    if (draftLeagueMatches.length === 0) {
+      return setError("Add at least one fixture.");
+    }
+    setError("");
+    setKnockoutRounds([]);
+    setMatches(draftLeagueMatches);
+    setDraftLeagueMatches([]);
+  };
+
+  const startCustomKnockout = () => {
+    if (draftKnockoutPairings.length === 0) {
+      return setError("Add at least one first-round match.");
+    }
+    setError("");
+    setMatches([]);
+    setKnockoutRounds(buildBracketFromRound0(draftKnockoutPairings));
+    setDraftKnockoutPairings([]);
   };
 
   const selectWinner = (roundIndex, matchId, winner) => {
@@ -323,10 +362,12 @@ export default function TournamentApp() {
     setTeams([]);
     setMatches([]);
     setKnockoutRounds([]);
-    setMode("league");
+    setDraftLeagueMatches([]);
+    setDraftKnockoutPairings([]);
+    setMode(MODES.LEAGUE);
     await persist({
       name: tournamentName,
-      mode: "league",
+      mode: MODES.LEAGUE,
       teams: [],
       matches: [],
       knockout_rounds: [],
@@ -335,18 +376,26 @@ export default function TournamentApp() {
   };
 
   const goToTeams = () => {
-    if (!mode) return setError("Choose League or Knockout first.");
+    if (!hasTournamentName(tournamentName)) {
+      return setError("Enter a tournament name to continue.");
+    }
+    if (!mode) return setError("Choose a format first.");
     setError("");
     goTo("teams");
   };
 
   const goToGame = () => {
+    if (!hasTournamentName(tournamentName)) {
+      return setError("Enter a tournament name to continue.");
+    }
     if (teams.length < 2) return setError("Select at least 2 teams.");
     setError("");
-    if (mode === "league") setKnockoutRounds([]);
+    if (isLeagueMode(mode)) setKnockoutRounds([]);
     else setMatches([]);
     goTo("game");
   };
+
+  const tableData = calculateTable();
 
   if (loading) {
     return (
@@ -356,6 +405,8 @@ export default function TournamentApp() {
       </div>
     );
   }
+
+  const nameIsValid = hasTournamentName(tournamentName);
 
   if (view === "setup") {
     return (
@@ -369,17 +420,30 @@ export default function TournamentApp() {
             ← All tournaments
           </button>
           <label className="tournament-name-field">
-            <span className="tournament-name-field__label">Tournament name</span>
+            <span className="tournament-name-field__label">
+              Tournament name <span className="tournament-name-field__required">*</span>
+            </span>
             <input
               type="text"
-              className="team-form__input"
+              className={`team-form__input ${!nameIsValid && tournamentName.length > 0 ? "team-form__input--invalid" : ""}`}
               value={tournamentName}
-              onChange={(e) => setTournamentName(e.target.value)}
+              onChange={(e) => {
+                setTournamentName(e.target.value);
+                if (error && hasTournamentName(e.target.value)) setError("");
+              }}
               placeholder="Enter Tournament Name"
+              required
+              aria-required="true"
+              autoComplete="off"
             />
+            {!nameIsValid && (
+              <span className="tournament-name-field__hint">Required before you continue</span>
+            )}
           </label>
           <h2 className="section-title wizard-step-title">Step 1: Choose format</h2>
-          <p className="wizard-hint">Each tournament is <strong>either</strong> League <strong>or</strong> Knockout — not both.</p>
+          <p className="wizard-hint">
+            Pick a format. <strong>Custom</strong> modes let you choose which teams play in each match.
+          </p>
           {isStarted && (
             <div className="auth-form__alert auth-form__alert--error" role="status">
               Tournament already started — format cannot be changed. Use Reset to start over.
@@ -390,26 +454,52 @@ export default function TournamentApp() {
               {error}
             </div>
           )}
-          <div className="selection-buttons mode-pick--inline">
+          <div className="selection-buttons mode-pick--grid">
             <button
               type="button"
-              className={`btn-card ${mode === "league" ? "btn-card--selected" : ""}`}
-              onClick={() => pickMode("league")}
+              className={`btn-card ${mode === MODES.LEAGUE ? "btn-card--selected" : ""}`}
+              onClick={() => pickMode(MODES.LEAGUE)}
               disabled={isStarted}
             >
               League
+              <span className="btn-card__desc">All teams play each other</span>
             </button>
             <button
               type="button"
-              className={`btn-card ${mode === "knockout" ? "btn-card--selected" : ""}`}
-              onClick={() => pickMode("knockout")}
+              className={`btn-card ${mode === MODES.KNOCKOUT ? "btn-card--selected" : ""}`}
+              onClick={() => pickMode(MODES.KNOCKOUT)}
               disabled={isStarted}
             >
               Knockout
+              <span className="btn-card__desc">Auto single-elimination bracket</span>
+            </button>
+            <button
+              type="button"
+              className={`btn-card ${mode === MODES.CUSTOM_LEAGUE ? "btn-card--selected" : ""}`}
+              onClick={() => pickMode(MODES.CUSTOM_LEAGUE)}
+              disabled={isStarted}
+            >
+              Custom League
+              <span className="btn-card__desc">Pick your own fixtures</span>
+            </button>
+            <button
+              type="button"
+              className={`btn-card ${mode === MODES.CUSTOM_KNOCKOUT ? "btn-card--selected" : ""}`}
+              onClick={() => pickMode(MODES.CUSTOM_KNOCKOUT)}
+              disabled={isStarted}
+            >
+              Custom Knockout
+              <span className="btn-card__desc">Pick first-round pairings</span>
             </button>
           </div>
           <div className="wizard-footer">
-            <button type="button" className="btn-primary-large" onClick={goToTeams}>
+            <button
+              type="button"
+              className="btn-primary-large"
+              onClick={goToTeams}
+              disabled={!nameIsValid}
+              style={{ opacity: nameIsValid ? 1 : 0.5 }}
+            >
               Next: Choose teams →
             </button>
           </div>
@@ -431,7 +521,7 @@ export default function TournamentApp() {
           </button>
           <h2 className="section-title wizard-step-title">Step 2: Teams</h2>
           <p className="wizard-hint">
-            Format: <strong>{mode === "knockout" ? "Knockout" : "League"}</strong> · {tournamentName}
+            Format: <strong>{getModeLabel(mode)}</strong> · {tournamentName}
           </p>
           {error && (
             <div className="auth-form__alert auth-form__alert--error" role="alert">
@@ -455,11 +545,11 @@ export default function TournamentApp() {
             <button
               type="button"
               className="btn-primary-large"
-              style={{ opacity: teams.length < 2 ? 0.5 : 1 }}
-              disabled={teams.length < 2}
+              style={{ opacity: teams.length < 2 || !nameIsValid ? 0.5 : 1 }}
+              disabled={teams.length < 2 || !nameIsValid}
               onClick={goToGame}
             >
-              Start {mode === "knockout" ? "knockout" : "league"} →
+              Continue →
             </button>
           </div>
         </div>
@@ -467,7 +557,109 @@ export default function TournamentApp() {
     );
   }
 
-  const modeLabel = mode === "knockout" ? "Knockout" : "League";
+  const modeLabel = getModeLabel(mode);
+  const exportEyebrow =
+    mode === MODES.CUSTOM_LEAGUE
+      ? "Custom League"
+      : mode === MODES.CUSTOM_KNOCKOUT
+        ? "Custom Knockout"
+        : isKnockoutMode(mode)
+          ? "Knockout"
+          : "League";
+
+  const renderLeagueGame = (regenerateLabel, onRegenerate) => (
+    <div className="league-content">
+      <div className="league-tabs">
+        <button
+          type="button"
+          className={`league-tab ${leagueTab === "fixtures" ? "league-tab--active" : ""}`}
+          onClick={() => setLeagueTab("fixtures")}
+        >
+          Fixtures
+        </button>
+        <button
+          type="button"
+          className={`league-tab ${leagueTab === "standings" ? "league-tab--active" : ""}`}
+          onClick={() => setLeagueTab("standings")}
+        >
+          Standings
+        </button>
+      </div>
+      <div ref={leagueExportRef} className="export-sheet">
+        <header className="export-sheet__header">
+          <p className="export-sheet__eyebrow">{exportEyebrow}</p>
+          <h2 className="export-sheet__title">{tournamentName}</h2>
+          <p className="export-sheet__subtitle">
+            {leagueTab === "standings" ? "Standings table" : "Match schedule"}
+          </p>
+        </header>
+        <div className="export-sheet__body">
+          {leagueTab === "fixtures" && (
+            <div className="panel-card panel-card--fixtures">
+              <h3 className="section-title">Match fixtures</h3>
+              <LeagueMatches matches={matches} onScoreChange={handleScoreChange} />
+            </div>
+          )}
+          {leagueTab === "standings" && (
+            <div className="panel-card panel-card--standings">
+              <h3 className="section-title">Standings</h3>
+              <LeagueTable table={tableData} onViewDetails={setDetailTeam} />
+            </div>
+          )}
+        </div>
+      </div>
+      <div className="league-content__actions">
+        <button type="button" className="btn-reset mode-btn" onClick={onRegenerate}>
+          {regenerateLabel}
+        </button>
+        <button
+          type="button"
+          className="mode-btn btn-action"
+          onClick={takeScreenshot}
+          disabled={exporting}
+        >
+          {exporting ? "Exporting…" : "Save screenshot"}
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderKnockoutGame = (onReset, resetLabel = "Reset bracket") => (
+    <>
+      <div className="knockout-panel">
+        <div ref={knockoutExportRef} className="knockout-panel__capture">
+          <div ref={bracketScrollRef} className="bracket-scroll">
+            <KnockoutBracket
+              rounds={knockoutRounds}
+              onSelectWinner={selectWinner}
+              onUndoWinner={undoWinner}
+            />
+          </div>
+          {(() => {
+            const champion = getChampion(knockoutRounds);
+            return champion ? (
+              <h2 className="champion-banner knockout-panel__champion">
+                Champion — {champion}
+              </h2>
+            ) : null;
+          })()}
+        </div>
+      </div>
+      <div className="league-content__actions">
+        <button type="button" className="btn-reset mode-btn" onClick={onReset}>
+          {resetLabel}
+        </button>
+        <button
+          type="button"
+          className="mode-btn btn-action"
+          onClick={takeScreenshot}
+          disabled={exporting}
+        >
+          {exporting ? "Exporting…" : "Save screenshot"}
+        </button>
+      </div>
+    </>
+  );
 
   return (
     <div className="tournament-app">
@@ -570,7 +762,7 @@ export default function TournamentApp() {
 
       <div className="tournament-main">
         <main className="main-panel">
-          {mode === "league" && (
+          {mode === MODES.LEAGUE && (
             <>
               {matches.length === 0 ? (
                 <div className="empty-state">
@@ -580,69 +772,35 @@ export default function TournamentApp() {
                   </button>
                 </div>
               ) : (
-                <div className="league-content">
-                  <div className="league-tabs">
-                    <button
-                      type="button"
-                      className={`league-tab ${leagueTab === "fixtures" ? "league-tab--active" : ""}`}
-                      onClick={() => setLeagueTab("fixtures")}
-                    >
-                      Fixtures
-                    </button>
-                    <button
-                      type="button"
-                      className={`league-tab ${leagueTab === "standings" ? "league-tab--active" : ""}`}
-                      onClick={() => setLeagueTab("standings")}
-                    >
-                      Standings
-                    </button>
-                  </div>
-                  <div ref={leagueExportRef} className="export-sheet">
-                    <header className="export-sheet__header">
-                      <p className="export-sheet__eyebrow">League</p>
-                      <h2 className="export-sheet__title">{tournamentName}</h2>
-                      <p className="export-sheet__subtitle">
-                        {leagueTab === "standings" ? "Standings table" : "Match schedule"}
-                      </p>
-                    </header>
-                    <div className="export-sheet__body">
-                      {leagueTab === "fixtures" && (
-                        <div className="panel-card panel-card--fixtures">
-                          <h3 className="section-title">Match fixtures</h3>
-                          <LeagueMatches matches={matches} onScoreChange={handleScoreChange} />
-                        </div>
-                      )}
-                      {leagueTab === "standings" && (
-                        <div className="panel-card panel-card--standings">
-                          <h3 className="section-title">Standings</h3>
-                          <LeagueTable table={calculateTable()} />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="league-content__actions">
-                    <button
-                      type="button"
-                      className="btn-reset mode-btn"
-                      onClick={() => setMatches([])}
-                    >
-                      Regenerate fixtures
-                    </button>
-                    <button
-                      type="button"
-                      className="mode-btn btn-action"
-                      onClick={takeScreenshot}
-                      disabled={exporting}
-                    >
-                      {exporting ? "Exporting…" : "Save screenshot"}
-                    </button>
-                  </div>
-                </div>
+                renderLeagueGame("Regenerate fixtures", () => setMatches([]))
               )}
             </>
           )}
 
-          {mode === "knockout" && (
+          {mode === MODES.CUSTOM_LEAGUE && (
+            <>
+              {matches.length === 0 ? (
+                <div className="empty-state empty-state--builder">
+                  <h3>{teams.length} teams · build your fixtures</h3>
+                  <CustomMatchBuilder
+                    teams={teams}
+                    matches={draftLeagueMatches}
+                    onMatchesChange={setDraftLeagueMatches}
+                    onStart={startCustomLeague}
+                    startLabel="Start custom league"
+                    emptyHint="Choose two teams per fixture. Add as many matches as you need."
+                  />
+                </div>
+              ) : (
+                renderLeagueGame("Edit fixtures", () => {
+                  setDraftLeagueMatches(matches);
+                  setMatches([]);
+                })
+              )}
+            </>
+          )}
+
+          {mode === MODES.KNOCKOUT && (
             <>
               {knockoutRounds.length === 0 ? (
                 <div className="empty-state">
@@ -652,44 +810,28 @@ export default function TournamentApp() {
                   </button>
                 </div>
               ) : (
-                <>
-                  <div className="knockout-panel">
-                    <div ref={knockoutExportRef} className="knockout-panel__capture">
-                      <div ref={bracketScrollRef} className="bracket-scroll">
-                        <KnockoutBracket
-                          rounds={knockoutRounds}
-                          onSelectWinner={selectWinner}
-                          onUndoWinner={undoWinner}
-                        />
-                      </div>
-                      {(() => {
-                        const champion = getChampion(knockoutRounds);
-                        return champion ? (
-                          <h2 className="champion-banner knockout-panel__champion">
-                            Champion — {champion}
-                          </h2>
-                        ) : null;
-                      })()}
-                    </div>
-                  </div>
-                  <div className="league-content__actions">
-                    <button
-                      type="button"
-                      className="btn-reset mode-btn"
-                      onClick={() => setKnockoutRounds([])}
-                    >
-                      Reset bracket
-                    </button>
-                    <button
-                      type="button"
-                      className="mode-btn btn-action"
-                      onClick={takeScreenshot}
-                      disabled={exporting}
-                    >
-                      {exporting ? "Exporting…" : "Save screenshot"}
-                    </button>
-                  </div>
-                </>
+                renderKnockoutGame(() => setKnockoutRounds([]))
+              )}
+            </>
+          )}
+
+          {mode === MODES.CUSTOM_KNOCKOUT && (
+            <>
+              {knockoutRounds.length === 0 ? (
+                <div className="empty-state empty-state--builder">
+                  <h3>{teams.length} teams · build first round</h3>
+                  <CustomKnockoutBuilder
+                    teams={teams}
+                    pairings={draftKnockoutPairings}
+                    onPairingsChange={setDraftKnockoutPairings}
+                    onStart={startCustomKnockout}
+                  />
+                </div>
+              ) : (
+                renderKnockoutGame(() => {
+                  setDraftKnockoutPairings([]);
+                  setKnockoutRounds([]);
+                }, "Edit pairings")
               )}
             </>
           )}
@@ -711,7 +853,7 @@ export default function TournamentApp() {
         >
           Roster
         </button>
-        {mode === "league" && (
+        {isLeagueMode(mode) && matches.length > 0 && (
           <button
             type="button"
             className={leagueTab === "standings" ? "is-active" : ""}
@@ -729,6 +871,15 @@ export default function TournamentApp() {
           {exporting ? "…" : "Export"}
         </button>
       </nav>
+
+      {detailTeam && (
+        <LeagueTeamDetailModal
+          teamName={detailTeam}
+          stats={tableData[detailTeam]}
+          matches={matches}
+          onClose={() => setDetailTeam(null)}
+        />
+      )}
     </div>
   );
 }

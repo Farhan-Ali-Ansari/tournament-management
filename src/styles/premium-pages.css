@@ -141,9 +141,11 @@
   max-width: 640px;
   margin: 0 auto;
   padding: var(--space-lg);
+  padding-left: max(var(--space-lg), env(safe-area-inset-left));
+  padding-right: max(var(--space-lg), env(safe-area-inset-right));
   display: flex;
   flex-direction: column;
-  gap: var(--space-xl);
+  gap: var(--section-gap);
 }
 
 .dashboard-hero {
@@ -192,7 +194,7 @@ a.nav-drawer__link.is-active {
   letter-spacing: 0.02em;
   text-transform: uppercase;
   line-height: 1.2;
-  padding: 0.4rem 0.2rem;
+  padding: var(--nav-item-padding);
   border-radius: var(--radius-sm);
   min-height: 44px;
   overflow: hidden;
@@ -353,11 +355,11 @@ a.nav-drawer__link.is-active {
   color: inherit;
   cursor: pointer;
   padding: var(--space-lg);
-  padding-left: calc(var(--space-lg) + 4px);
+  padding-left: calc(var(--space-lg) + var(--space-xs));
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
-  min-height: 140px;
+  gap: var(--space-md);
+  min-height: 148px;
 }
 
 .event-card__header {
@@ -373,19 +375,21 @@ a.nav-drawer__link.is-active {
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  padding: 0.3rem 0.65rem;
+  padding: var(--space-xs) var(--space-sm);
   border-radius: var(--radius-full);
   border: 1px solid var(--color-border);
   color: var(--text-muted);
 }
 
-.event-card__badge--league {
+.event-card__badge--league,
+.event-card__badge--custom_league {
   border-color: rgba(201, 162, 39, 0.35);
   color: var(--gold-light);
   background: var(--gold-muted);
 }
 
-.event-card__badge--knockout {
+.event-card__badge--knockout,
+.event-card__badge--custom_knockout {
   border-color: rgba(201, 162, 39, 0.5);
   color: #1a1408;
   background: var(--gradient-gold);

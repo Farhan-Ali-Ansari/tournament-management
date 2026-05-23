@@ -2,7 +2,7 @@
 .guide-page {
   display: flex;
   flex-direction: column;
-  gap: var(--space-xl);
+  gap: var(--section-gap);
   animation: pageEnter 0.45s ease;
 }
 
@@ -94,7 +94,7 @@
   display: flex;
   align-items: baseline;
   gap: var(--space-sm);
-  padding: 0.5rem 0.65rem;
+  padding: var(--space-sm) var(--space-md);
   border-radius: var(--radius-sm);
   color: var(--text-primary);
   text-decoration: none;
@@ -118,7 +118,7 @@
 .guide-sections {
   display: flex;
   flex-direction: column;
-  gap: var(--space-lg);
+  gap: var(--space-md);
 }
 
 .guide-section {

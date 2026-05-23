@@ -12,6 +12,8 @@ import { getAuthErrorMessage } from "../lib/authErrors";
 import DashboardLayout from "../components/DashboardLayout";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
+import { getModeLabel } from "../lib/tournamentModes";
+import { FORMAT_META_ID, resolveAppMode } from "../lib/tournamentPersistence";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -76,8 +78,14 @@ export default function Dashboard() {
     }
   };
 
-  const isActive = (t) =>
-    (t.matches?.length ?? 0) > 0 || (t.knockout_rounds?.length ?? 0) > 0;
+  const isActive = (t) => {
+    const metaOnly =
+      Array.isArray(t.matches) &&
+      t.matches.length === 1 &&
+      t.matches[0]?.id === FORMAT_META_ID;
+    const matchCount = metaOnly ? 0 : (t.matches?.length ?? 0);
+    return matchCount > 0 || (t.knockout_rounds?.length ?? 0) > 0;
+  };
 
   return (
     <DashboardLayout title="Your events" subtitle="Tournament suite">
@@ -134,7 +142,8 @@ export default function Dashboard() {
         ) : (
           <ul className="events-grid">
             {tournaments.map((t, index) => {
-              const mode = t.mode === "knockout" ? "Knockout" : "League";
+              const appMode = resolveAppMode(t);
+              const mode = getModeLabel(appMode);
               const active = isActive(t);
               return (
                 <li
@@ -150,7 +159,7 @@ export default function Dashboard() {
                     >
                       <div className="event-card__header">
                         <span
-                          className={`event-card__badge event-card__badge--${t.mode || "league"}`}
+                          className={`event-card__badge event-card__badge--${appMode}`}
                         >
                           {mode}
                         </span>
@@ -158,7 +167,9 @@ export default function Dashboard() {
                           <span className="event-card__status">In play</span>
                         )}
                       </div>
-                      <h3 className="event-card__name">{t.name}</h3>
+                      <h3 className="event-card__name">
+                        {t.name?.trim() || "Untitled tournament"}
+                      </h3>
                       <div className="event-card__meta">
                         <span className="event-card__stat">
                           <span className="event-card__stat-value">

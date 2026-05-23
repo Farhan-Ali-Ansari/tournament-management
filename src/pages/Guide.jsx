@@ -7,13 +7,28 @@ const sections = [
     content: (
       <>
         <p>
-          <strong>Jackaroo Tournament Manager</strong> is your private suite for running
-          league seasons and knockout cups. Everything saves automatically to your account
-          in the cloud, so you can pick up on any device where you are signed in.
+          <strong>Jackaroo Tournament Manager</strong> helps you run league seasons and
+          knockout cups from your phone or desktop. Everything saves automatically to your
+          account in the cloud.
         </p>
-        <p>
-          Each tournament is dedicated to <strong>one format only</strong> — League{" "}
-          <em>or</em> Knockout — keeping fixtures, tables, and brackets clear and focused.
+        <p>Each tournament uses one of four formats:</p>
+        <ul className="guide-list">
+          <li>
+            <strong>League</strong> — automatic round-robin fixtures for every team pairing.
+          </li>
+          <li>
+            <strong>Custom League</strong> — you choose which fixtures are played.
+          </li>
+          <li>
+            <strong>Knockout</strong> — automatic single-elimination bracket (with byes if needed).
+          </li>
+          <li>
+            <strong>Custom Knockout</strong> — you set first-round pairings, then the bracket builds.
+          </li>
+        </ul>
+        <p className="guide-note">
+          Pick your format at the start. You cannot change it after matches or a bracket exist
+          without resetting the tournament.
         </p>
       </>
     ),
@@ -24,13 +39,13 @@ const sections = [
     content: (
       <>
         <ol className="guide-steps">
-          <li>Create an account with your email on the <strong>Sign up</strong> page.</li>
-          <li>Sign in anytime from <strong>Sign in</strong>. Your tournaments and saved teams stay linked to your account.</li>
-          <li>Use <strong>Sign out</strong> in the sidebar when you are finished on a shared device.</li>
+          <li>Create an account on the <strong>Sign up</strong> page with your email.</li>
+          <li>Sign in from <strong>Sign in</strong>. Tournaments and saved teams stay on your account.</li>
+          <li>Use <strong>Sign out</strong> in the sidebar on a shared device.</li>
         </ol>
         <p className="guide-note">
-          The app needs Supabase configured (see project README). If you see a configuration
-          warning on the dashboard, contact your organizer or host before creating events.
+          The app needs Supabase configured (see the project README). A warning on the dashboard
+          means setup is incomplete — fix that before creating events.
         </p>
       </>
     ),
@@ -41,21 +56,25 @@ const sections = [
     content: (
       <>
         <p>
-          The <strong>Overview</strong> page lists every tournament on your account. Each card
-          shows the format badge (League or Knockout), team count, last updated date, and whether
-          the event is <strong>In play</strong>.
+          <strong>Overview</strong> lists every tournament. Each card shows the format badge, team
+          count, last updated date, and <strong>In play</strong> when fixtures or a bracket have
+          started.
         </p>
         <ul className="guide-list">
           <li>
-            <strong>+ New</strong> — creates a fresh tournament and opens setup.
+            <strong>+ New</strong> — creates a tournament and opens setup.
           </li>
           <li>
-            <strong>Open</strong> — tap the card to continue where you left off (setup, teams, or game).
+            <strong>Open</strong> — continue setup, teams, or the game view.
           </li>
           <li>
-            <strong>Delete</strong> — removes the tournament permanently (cannot be undone).
+            <strong>Delete</strong> — removes the tournament permanently.
           </li>
         </ul>
+        <p>
+          Tournaments without a name show as <strong>Untitled tournament</strong> on the dashboard
+          until you enter a name in setup.
+        </p>
       </>
     ),
   },
@@ -65,16 +84,15 @@ const sections = [
     content: (
       <>
         <p>
-          Open <strong>Saved Teams</strong> in the sidebar to build a reusable roster for your account.
+          Open <strong>Saved Teams</strong> in the sidebar to keep a reusable roster on your account.
         </p>
         <ul className="guide-list">
-          <li>Add team names once — they are stored on your profile.</li>
-          <li>Rename or delete saved teams anytime.</li>
-          <li>When setting up a tournament, tap saved team chips to add them quickly.</li>
-          <li>You can still add one-off teams only for that event without saving them globally.</li>
+          <li>Add, rename, or delete saved team names anytime.</li>
+          <li>During setup, tap chips to add saved teams to a tournament quickly.</li>
+          <li>You can still add one-off teams for a single event without saving them globally.</li>
         </ul>
         <p className="guide-note">
-          Deleting a saved team does not remove it from tournaments already saved in the past.
+          Deleting a saved team does not change tournaments you already created.
         </p>
       </>
     ),
@@ -85,85 +103,130 @@ const sections = [
     content: (
       <>
         <ol className="guide-steps">
-          <li>From Overview, tap <strong>+ New</strong> (or <strong>Create tournament</strong> if you have none).</li>
           <li>
-            <strong>Step 1 — Format:</strong> enter a tournament name, then choose{" "}
-            <strong>League</strong> or <strong>Knockout</strong>. You cannot switch format after the
-            competition has started without resetting.
+            From Overview, tap <strong>+ New</strong> (or <strong>Create tournament</strong> if you
+            have none).
           </li>
           <li>
-            <strong>Step 2 — Teams:</strong> add at least two teams. Use saved chips or type new names.
-            Rename or remove teams before you start the season or bracket.
+            <strong>Step 1 — Setup:</strong> enter a <strong>tournament name</strong> (required).
+            Then pick one of the four format cards. <strong>Next: Choose teams</strong> stays disabled
+            until the name is filled in.
           </li>
           <li>
-            Tap <strong>Start league</strong> or <strong>Start knockout</strong> to enter the game view.
+            <strong>Step 2 — Teams:</strong> add at least two teams using saved chips or new names.
+            Rename or remove teams before starting play.
+          </li>
+          <li>
+            <strong>Game view:</strong> start fixtures or a bracket (or build custom fixtures /
+            pairings first). The app opens the right screen for your format.
           </li>
         </ol>
       </>
     ),
   },
   {
-    id: "league",
-    title: "League mode",
+    id: "formats",
+    title: "Choosing a format",
     content: (
       <>
-        <p>After you start the league, fixtures are generated for every team pairing (home and away style round-robin).</p>
+        <ul className="guide-list">
+          <li>
+            <strong>League</strong> — tap <strong>Start league season</strong> to generate every
+            team-vs-team fixture once.
+          </li>
+          <li>
+            <strong>Custom League</strong> — add fixtures with the team dropdowns, then{" "}
+            <strong>Start custom league</strong>.
+          </li>
+          <li>
+            <strong>Knockout</strong> — tap <strong>Start knockout cup</strong> for a random
+            single-elimination bracket.
+          </li>
+          <li>
+            <strong>Custom Knockout</strong> — add first-round matches (optional bye if away team is
+            empty), then <strong>Build bracket</strong>.
+          </li>
+        </ul>
+        <p className="guide-note">
+          Format badges on the dashboard use distinct colors so you can tell League, Custom League,
+          Knockout, and Custom Knockout apart at a glance.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "league",
+    title: "League & Custom League",
+    content: (
+      <>
         <h4 className="guide-subtitle">Fixtures tab</h4>
         <ul className="guide-list">
-          <li>Enter scores in the <strong>A</strong> and <strong>B</strong> fields for each match.</li>
-          <li>Standings update automatically when both scores are filled.</li>
-          <li>Win = 3 points, draw = 1 point each, loss = 0.</li>
+          <li>Enter home and away scores for each match.</li>
+          <li>Standings update when both scores are filled.</li>
+          <li>Wins, draws, and losses are tracked internally for sorting (draws count in results).</li>
         </ul>
         <h4 className="guide-subtitle">Standings tab</h4>
         <ul className="guide-list">
-          <li>View played, won, draw, lost, and points for every team.</li>
-          <li>Teams are sorted by wins, then losses.</li>
+          <li>
+            Columns: <strong>Played</strong>, <strong>Won</strong>, <strong>Lost</strong>, plus{" "}
+            <strong>View</strong> for details.
+          </li>
+          <li>Teams sort by most wins, then fewer losses, then more games played.</li>
+          <li>
+            Tap <strong>View</strong> to open a popup with Played / Won / Lost and a list of who
+            they played, scores, and result (Win, Loss, Draw, or Pending).
+          </li>
         </ul>
-        <h4 className="guide-subtitle">League actions</h4>
+        <h4 className="guide-subtitle">Actions</h4>
         <ul className="guide-list">
           <li>
-            <strong>Regenerate fixtures</strong> — clears all matches and builds a new schedule (scores are lost).
+            <strong>Regenerate fixtures</strong> (League) — new full schedule; scores cleared.
           </li>
           <li>
-            <strong>Save screenshot</strong> — exports the current fixtures or standings view as a PNG.
+            <strong>Edit fixtures</strong> (Custom League) — back to the fixture builder; scores
+            cleared when you restart.
+          </li>
+          <li>
+            <strong>Save screenshot</strong> — PNG of the current fixtures or standings tab.
           </li>
         </ul>
+        <p className="guide-note">
+          On small screens, action buttons stack full width under the table for easier tapping.
+        </p>
       </>
     ),
   },
   {
     id: "knockout",
-    title: "Knockout mode",
+    title: "Knockout & Custom Knockout",
     content: (
       <>
         <p>
-          Tap <strong>Start knockout cup</strong> to build a full single-elimination bracket from your
-          team list (byes are added automatically if the count is not a power of two).
+          Standard knockout shuffles teams into a bracket. Custom knockout lets you define round-one
+          pairings (and byes) before later rounds are generated.
         </p>
         <ul className="guide-list">
           <li>
-            <strong>Pick winners</strong> — when both slots show real team names, tap a name to advance them.
+            <strong>Pick winners</strong> — tap a team name when both slots are filled.
           </li>
           <li>
-            <strong>Waiting</strong> — matches fill in as earlier rounds finish.
+            <strong>BYE</strong> — a lone team advances automatically.
           </li>
           <li>
-            <strong>BYE</strong> — some teams skip a round; the other team advances automatically.
+            <strong>Undo</strong> — clear a winner and pick again.
           </li>
           <li>
-            <strong>Undo</strong> — on a finished match, use Undo to clear the winner and fix mistakes.
+            <strong>Champion banner</strong> — shown when the final is decided.
           </li>
           <li>
-            <strong>Champion banner</strong> — appears when the final is decided.
+            Swipe the bracket horizontally on wide trees; scroll the page vertically as usual.
           </li>
           <li>
-            Swipe the bracket <strong>left and right</strong> on wide brackets; scroll the page up and down normally.
+            <strong>Reset bracket</strong> or <strong>Edit pairings</strong> — start over from round
+            one.
           </li>
           <li>
-            <strong>Reset bracket</strong> — clears the knockout and lets you start again.
-          </li>
-          <li>
-            <strong>Save screenshot</strong> — captures the bracket (and champion banner if shown).
+            <strong>Save screenshot</strong> — exports the bracket (and champion if shown).
           </li>
         </ul>
       </>
@@ -174,26 +237,40 @@ const sections = [
     title: "During a tournament (game view)",
     content: (
       <>
-        <p>On phone and tablet, the main area shows fixtures, table, or bracket. Extra tools live in the slide-out panel:</p>
+        <p>The main area shows fixtures, standings, or the bracket. Extra tools:</p>
+        <h4 className="guide-subtitle">Mobile bottom bar</h4>
         <ul className="guide-list">
           <li>
-            <strong>Teams</strong> (bottom nav) — jump back to the team list step.
+            <strong>Teams</strong> — back to the team list step.
           </li>
           <li>
-            <strong>Roster</strong> — open the side drawer to add, rename, or remove teams mid-event.
+            <strong>Roster</strong> — slide-out panel to add, rename, or remove teams.
           </li>
           <li>
-            <strong>Table</strong> (league) — quick switch to standings on mobile.
+            <strong>Table</strong> — jump to standings (league formats, when the season has started).
           </li>
           <li>
-            <strong>Screenshot</strong> — export from the bottom bar or from the roster drawer.
+            <strong>Export</strong> — same as Save screenshot.
+          </li>
+        </ul>
+        <h4 className="guide-subtitle">Roster drawer</h4>
+        <ul className="guide-list">
+          <li>
+            <strong>Concierge guide</strong> — this help page.
           </li>
           <li>
-            <strong>Reset all</strong> (in roster drawer) — wipes teams, matches, and bracket, then returns to format setup.
+            <strong>Buy me a coffee</strong> — support link.
+          </li>
+          <li>
+            <strong>Save screenshot</strong> — export the current view.
+          </li>
+          <li>
+            <strong>Reset all</strong> — clears teams, scores, and bracket; returns to format setup.
           </li>
         </ul>
         <p className="guide-note">
-          On desktop, the teams roster stays in the left sidebar while the main panel shows the competition.
+          On desktop (wide screen), the team roster stays in the left column while the competition
+          fills the main panel.
         </p>
       </>
     ),
@@ -204,9 +281,11 @@ const sections = [
     content: (
       <>
         <ul className="guide-list">
-          <li>Changes save to the cloud as you work — watch for a brief <strong>Saving…</strong> indicator.</li>
-          <li>Closing the browser or switching devices does not lose progress if you are signed in.</li>
-          <li>Tournament name, format, teams, scores, and bracket state are all stored together per event.</li>
+          <li>Changes save to the cloud as you work — look for <strong>Saving…</strong> briefly.</li>
+          <li>Sign in on another device to continue the same tournaments.</li>
+          <li>
+            Each event stores name, format, teams, league matches, and knockout rounds together.
+          </li>
         </ul>
       </>
     ),
@@ -217,11 +296,12 @@ const sections = [
     content: (
       <>
         <p>
-          <strong>Save screenshot</strong> downloads a high-quality PNG of the current export area — league
-          fixtures, standings table, or knockout bracket. Use it for group chats, posters, or social posts.
+          <strong>Save screenshot</strong> (or <strong>Export</strong> on mobile) downloads a PNG of
+          the current export area — league fixtures, standings table, or knockout bracket.
         </p>
         <p className="guide-note">
-          Start fixtures or the bracket before exporting; otherwise the app will ask you to begin the competition first.
+          Start the season or bracket first. If nothing is ready to export, the app will ask you to
+          begin the competition.
         </p>
       </>
     ),
@@ -232,10 +312,16 @@ const sections = [
     content: (
       <>
         <ul className="guide-list">
-          <li>Need a different format? Use <strong>Reset all</strong> or delete the tournament and create a new one.</li>
-          <li>Format buttons are locked after matches or a bracket exist — this protects your live data.</li>
-          <li>At least <strong>two teams</strong> are required before starting league or knockout.</li>
-          <li>If something fails to save, check your connection and try again; error messages appear at the top.</li>
+          <li>
+            Need a different format? Use <strong>Reset all</strong> or delete the event and create a
+            new one.
+          </li>
+          <li>Format cards lock after fixtures or a bracket exist — this protects live data.</li>
+          <li>At least <strong>two teams</strong> are required before play can start.</li>
+          <li>
+            Tournament name is required before leaving setup — you cannot continue with a blank name.
+          </li>
+          <li>If saving fails, check your connection; errors appear at the top of the screen.</li>
         </ul>
       </>
     ),
@@ -250,7 +336,8 @@ export default function Guide() {
           <p className="guide-hero__eyebrow">The complete experience</p>
           <h2 className="guide-hero__title">How to use your tournament suite</h2>
           <p className="guide-hero__lead">
-            From your first sign-in to crowning a champion — every step, explained with care.
+            Four competition formats, cloud save, standings with match details, and exportable
+            tables and brackets — all in one place.
           </p>
         </header>
 

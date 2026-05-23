@@ -4,7 +4,7 @@ create table if not exists public.tournaments (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users (id) on delete cascade,
   name text not null default '',
-  mode text not null default 'league' check (mode in ('league', 'knockout')),
+  mode text not null default 'league' check (mode in ('league', 'knockout', 'custom_league', 'custom_knockout')),
   teams jsonb not null default '[]'::jsonb,
   matches jsonb not null default '[]'::jsonb,
   knockout_rounds jsonb not null default '[]'::jsonb,

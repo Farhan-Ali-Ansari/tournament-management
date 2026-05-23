@@ -1,12 +1,14 @@
 # Jackaroo Tournament Manager
 
-Mobile-friendly tournament app for **league** and **knockout** formats. Data is stored per user in **Supabase** (auth + database).
+Mobile-friendly tournament app for **league**, **knockout**, **custom league**, and **custom knockout** formats. Data is stored per user in **Supabase** (auth + database).
 
 ## Features
 
 - Email sign up / sign in
 - Multiple tournaments per account
 - League fixtures, live standings, knockout brackets
+- Custom league (pick your fixtures) and custom knockout (pick first-round pairings)
+- Custom league standings detail popup (who each team played)
 - Auto-save to cloud
 - Screenshot export
 - Mobile bottom navigation and slide-out team editor
@@ -20,6 +22,8 @@ Mobile-friendly tournament app for **league** and **knockout** formats. Data is 
    If you see **permission denied**, run [`supabase/fix-permissions.sql`](supabase/fix-permissions.sql) as well.
 3. Under **Authentication → Providers → Email**, enable **Email** and turn **OFF** “Confirm email” so sign-up does not require inbox verification. See [`supabase/AUTH_SETUP.md`](supabase/AUTH_SETUP.md).
 4. Copy **Project URL** and **anon public** key from **Settings → API**.
+
+Custom League and Custom Knockout work with the standard schema (no extra SQL required). Optionally run [`supabase/FIX-CUSTOM-MODES.sql`](supabase/FIX-CUSTOM-MODES.sql) if you want `custom_league` / `custom_knockout` stored directly in the `mode` column.
 
 ### 2. Environment variables
 
@@ -61,7 +65,7 @@ Apply to **Production** (and Preview if you use preview URLs), then redeploy.
 1. **Sign up** or **Sign in**
 2. **Dashboard** — create or open a tournament
 3. **Teams** — add/rename teams, name your tournament
-4. **Mode** — League or Knockout
+4. **Mode** — League, Knockout, Custom League, or Custom Knockout
 5. **Game** — enter scores or pick winners (auto-saved)
 
 ## Tech stack

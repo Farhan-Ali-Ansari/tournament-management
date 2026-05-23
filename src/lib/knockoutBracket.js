@@ -43,6 +43,40 @@ export function replayAdvances(rounds) {
   return updated;
 }
 
+/** Build knockout tree from user-defined first-round pairings. */
+export function buildBracketFromRound0(round0Matches) {
+  if (!round0Matches?.length) return [];
+
+  const round0 = round0Matches.map((m, i) => ({
+    id: m.id || `r0-m${i}`,
+    teamA: m.teamA || "",
+    teamB: m.teamB || "",
+    winner: m.winner || "",
+  }));
+
+  const rounds = [round0];
+  let matchCount = round0.length;
+
+  let roundIdx = 1;
+  while (matchCount > 1) {
+    const nextCount = Math.ceil(matchCount / 2);
+    const round = [];
+    for (let m = 0; m < nextCount; m++) {
+      round.push({
+        id: `r${roundIdx}-m${m}`,
+        teamA: "",
+        teamB: "",
+        winner: "",
+      });
+    }
+    rounds.push(round);
+    matchCount = nextCount;
+    roundIdx += 1;
+  }
+
+  return replayAdvances(rounds);
+}
+
 export function buildFullBracket(teams) {
   const names = teams.map((t) => t.name);
   if (names.length < 2) return [];

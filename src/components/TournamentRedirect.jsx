@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Navigate, useParams } from "react-router-dom";
 import { fetchTournament } from "../services/tournamentService";
+import { isCustomMode } from "../lib/tournamentModes";
+import { decodeFromDatabase } from "../lib/tournamentPersistence";
 
 export default function TournamentRedirect() {
   const { id } = useParams();
@@ -12,13 +14,16 @@ export default function TournamentRedirect() {
       try {
         const row = await fetchTournament(id);
         if (cancelled) return;
-        const hasLeague = Array.isArray(row.matches) && row.matches.length > 0;
-        const hasKnockout =
-          Array.isArray(row.knockout_rounds) && row.knockout_rounds.length > 0;
-        const teamCount = Array.isArray(row.teams) ? row.teams.length : 0;
+        const decoded = decodeFromDatabase(row);
+        const mode = decoded.mode;
+        const hasName = Boolean(decoded.name?.trim());
+        const hasLeague = decoded.matches.length > 0;
+        const hasKnockout = decoded.knockout_rounds.length > 0;
+        const teamCount = decoded.teams.length;
 
-        if (hasLeague || hasKnockout) setTarget("game");
-        else if (teamCount >= 2) setTarget("teams");
+        if (!hasName) setTarget("setup");
+        else if (hasLeague || hasKnockout) setTarget("game");
+        else if (teamCount >= 2) setTarget(isCustomMode(mode) ? "game" : "teams");
         else setTarget("setup");
       } catch {
         if (!cancelled) setTarget("setup");
