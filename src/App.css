@@ -458,10 +458,122 @@ body {
   }
 }
 
+.fixture-search {
+  margin-bottom: var(--space-md);
+}
+
+.fixture-search__label {
+  display: block;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  margin-bottom: var(--space-xs);
+}
+
+.fixture-search__empty {
+  color: var(--text-muted);
+  text-align: center;
+  padding: var(--space-lg) var(--space-md);
+  margin: 0;
+}
+
 .league-fixtures {
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
+}
+
+.fixture-score-display {
+  min-width: 2.5rem;
+  text-align: center;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.share-fixtures {
+  width: 100%;
+}
+
+.share-fixtures__btn {
+  width: 100%;
+}
+
+.share-fixtures__migration {
+  margin-top: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  background: rgba(255, 193, 7, 0.08);
+  border: 1px solid rgba(255, 193, 7, 0.25);
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.share-fixtures__migration p {
+  margin: 0 0 var(--space-xs);
+}
+
+.shared-fixtures {
+  min-height: 100vh;
+  padding: var(--space-lg) var(--space-md) var(--space-xl);
+  background: var(--bg-dark);
+  background-image: var(--gradient-mesh);
+}
+
+.shared-fixtures--error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shared-fixtures__card {
+  max-width: 28rem;
+  width: 100%;
+  padding: var(--space-xl);
+  text-align: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+}
+
+.shared-fixtures__header {
+  max-width: 48rem;
+  margin: 0 auto var(--space-lg);
+  text-align: center;
+}
+
+.shared-fixtures__eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gold-primary);
+  margin-bottom: var(--space-sm);
+}
+
+.shared-fixtures__title {
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 5vw, 2rem);
+  margin: 0 0 var(--space-xs);
+  color: var(--text-primary);
+}
+
+.shared-fixtures__subtitle {
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.shared-fixtures__message {
+  color: var(--text-muted);
+  margin-bottom: var(--space-lg);
+}
+
+.shared-fixtures__refresh {
+  margin-top: var(--space-md);
+}
+
+.shared-fixtures__content {
+  max-width: 48rem;
+  margin: 0 auto;
 }
 
 .fixture-score-sep {
@@ -1675,6 +1787,12 @@ button.bracket-team:hover {
 
 .custom-builder__item-label {
   font-weight: 600;
+}
+
+.custom-builder__item--empty {
+  justify-content: center;
+  color: var(--text-muted);
+  font-weight: 500;
 }
 
 .custom-builder__remove {

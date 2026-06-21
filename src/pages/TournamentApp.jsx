@@ -23,11 +23,16 @@ import {
   isLeagueMode,
   isKnockoutMode,
 } from "../lib/tournamentModes";
+import {
+  applyTeamAdditionToMatchData,
+  applyTeamRemovalToMatchData,
+} from "../lib/teamRosterUpdates";
 import { useAuth } from "../context/AuthContext";
 import { useSavedTeams } from "../hooks/useSavedTeams";
 import { useTournamentData } from "../hooks/useTournamentData";
 import { getAuthErrorMessage } from "../lib/authErrors";
-import "../App.css";
+import ShareFixturesButton from "../components/ShareFixturesButton";
+import { calculateLeagueTable } from "../lib/leagueTable";
 
 const VIEW_FROM_PATH = {
   setup: "setup",
@@ -159,12 +164,54 @@ export default function TournamentApp() {
     }
   };
 
+  const addTeamToRoster = (newTeam) => {
+    setTeams((prev) => {
+      if (prev.some((t) => t.id === newTeam.id)) return prev;
+      const updatedTeams = [...prev, newTeam];
+      applyTeamAdditionToMatchData({
+        teams: updatedTeams,
+        newTeam,
+        mode,
+        isStarted,
+        setMatches,
+      });
+      return updatedTeams;
+    });
+  };
+
+  const removeTeamById = (teamId, { confirm = true } = {}) => {
+    const team = teams.find((t) => t.id === teamId);
+    if (!team) return;
+
+    if (
+      confirm &&
+      isStarted &&
+      !window.confirm(
+        "Remove this team? Their fixtures and results will be removed; other teams stay unchanged."
+      )
+    ) {
+      return;
+    }
+
+    setTeams((prev) => prev.filter((t) => t.id !== teamId));
+    if (isStarted) {
+      applyTeamRemovalToMatchData({
+        teamName: team.name,
+        mode,
+        setMatches,
+        setKnockoutRounds,
+        setDraftLeagueMatches,
+        setDraftKnockoutPairings,
+      });
+    }
+  };
+
   const toggleSavedTeam = (savedTeam) => {
     const exists = teams.some((t) => t.id === savedTeam.id);
     if (exists) {
-      setTeams((prev) => prev.filter((t) => t.id !== savedTeam.id));
+      removeTeamById(savedTeam.id, { confirm: isStarted });
     } else {
-      setTeams((prev) => [...prev, { id: savedTeam.id, name: savedTeam.name }]);
+      addTeamToRoster({ id: savedTeam.id, name: savedTeam.name });
     }
     setError("");
   };
@@ -181,24 +228,14 @@ export default function TournamentApp() {
         (t) => t.name.toLowerCase() === trimmed.toLowerCase()
       );
       const row = existing || (await addSavedTeam(trimmed));
-      setTeams((prev) => [...prev, { id: row.id, name: row.name }]);
+      addTeamToRoster({ id: row.id, name: row.name });
     } catch (err) {
       setError(getAuthErrorMessage(err));
     }
   };
 
   const removeFromTournament = (teamId) => {
-    if (
-      isStarted &&
-      !window.confirm("Remove this team? Match data will be reset.")
-    ) {
-      return;
-    }
-    setTeams((prev) => prev.filter((t) => t.id !== teamId));
-    if (isStarted) {
-      setMatches([]);
-      setKnockoutRounds([]);
-    }
+    removeTeamById(teamId);
   };
 
   const renameTeam = async (teamId, newName) => {
@@ -284,41 +321,6 @@ export default function TournamentApp() {
     );
   };
 
-  const calculateTable = () => {
-    const table = {};
-    teams.forEach((t) => {
-      table[t.name] = { played: 0, won: 0, draw: 0, lost: 0, points: 0 };
-    });
-    matches.forEach((m) => {
-      if (m.scoreA === "" || m.scoreB === "") return;
-      const a = Number(m.scoreA);
-      const b = Number(m.scoreB);
-      if (!table[m.teamA] || !table[m.teamB]) return;
-      table[m.teamA].played++;
-      table[m.teamB].played++;
-      if (a > b) {
-        table[m.teamA].won++;
-        table[m.teamA].points += 3;
-        table[m.teamB].lost++;
-      } else if (a < b) {
-        table[m.teamB].won++;
-        table[m.teamB].points += 3;
-        table[m.teamA].lost++;
-      } else {
-        table[m.teamA].draw++;
-        table[m.teamB].draw++;
-        table[m.teamA].points++;
-        table[m.teamB].points++;
-      }
-    });
-    return Object.entries(table)
-      .sort(([, a], [, b]) => b.won - a.won || a.lost - b.lost || b.played - a.played)
-      .reduce((obj, [key, value]) => {
-        obj[key] = value;
-        return obj;
-      }, {});
-  };
-
   const startKnockout = () => {
     if (teams.length < 2) return setError("Need at least 2 teams.");
     setError("");
@@ -395,7 +397,7 @@ export default function TournamentApp() {
     goTo("game");
   };
 
-  const tableData = calculateTable();
+  const tableData = calculateLeagueTable(teams, matches);
 
   if (loading) {
     return (
@@ -609,6 +611,7 @@ export default function TournamentApp() {
         </div>
       </div>
       <div className="league-content__actions">
+        <ShareFixturesButton tournamentId={tournamentId} disabled={matches.length === 0} />
         <button type="button" className="btn-reset mode-btn" onClick={onRegenerate}>
           {regenerateLabel}
         </button>
@@ -646,6 +649,10 @@ export default function TournamentApp() {
         </div>
       </div>
       <div className="league-content__actions">
+        <ShareFixturesButton
+          tournamentId={tournamentId}
+          disabled={knockoutRounds.length === 0}
+        />
         <button type="button" className="btn-reset mode-btn" onClick={onReset}>
           {resetLabel}
         </button>

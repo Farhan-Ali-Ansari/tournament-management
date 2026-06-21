@@ -8,6 +8,7 @@ create table if not exists public.tournaments (
   teams jsonb not null default '[]'::jsonb,
   matches jsonb not null default '[]'::jsonb,
   knockout_rounds jsonb not null default '[]'::jsonb,
+  share_enabled boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -17,6 +18,7 @@ create index if not exists tournaments_user_id_idx on public.tournaments (user_i
 -- Required: table privileges for Supabase API roles (RLS alone is not enough)
 grant usage on schema public to anon, authenticated, service_role;
 grant select, insert, update, delete on table public.tournaments to authenticated;
+grant select on table public.tournaments to anon;
 grant select, insert, update, delete on table public.tournaments to service_role;
 
 alter table public.tournaments enable row level security;
@@ -46,6 +48,11 @@ create policy "Users can delete own tournaments"
   on public.tournaments for delete
   to authenticated
   using (auth.uid() = user_id);
+
+create policy "Anyone can view shared tournaments"
+  on public.tournaments for select
+  to anon
+  using (share_enabled = true);
 
 create or replace function public.handle_updated_at()
 returns trigger as $$

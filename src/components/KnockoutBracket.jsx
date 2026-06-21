@@ -45,7 +45,7 @@ function TeamSlot({
   );
 }
 
-function BracketMatch({ match, matchIndex, onSelectWinner, onUndo }) {
+function BracketMatch({ match, matchIndex, onSelectWinner, onUndo, readOnly }) {
   const hasBye = match.teamB === "BYE";
   const slotA = (match.teamA || "").trim();
   const slotB = (match.teamB || "").trim();
@@ -69,7 +69,7 @@ function BracketMatch({ match, matchIndex, onSelectWinner, onUndo }) {
           isLoser={decided && match.winner !== slotA && slotA}
           isTbd={teamA === TBD}
           isBye={false}
-          canPick={ready && !decided}
+          canPick={!readOnly && ready && !decided}
           onPick={() => onSelectWinner(slotA)}
         />
         <span className="bracket-match__vs">vs</span>
@@ -79,7 +79,7 @@ function BracketMatch({ match, matchIndex, onSelectWinner, onUndo }) {
           isLoser={decided && match.winner !== slotB && slotB}
           isTbd={!hasBye && teamB === TBD}
           isBye={hasBye}
-          canPick={ready && !decided}
+          canPick={!readOnly && ready && !decided}
           onPick={() => onSelectWinner(slotB)}
         />
       </div>
@@ -89,7 +89,7 @@ function BracketMatch({ match, matchIndex, onSelectWinner, onUndo }) {
       {waiting && (
         <p className="bracket-match__note">Waiting for previous winners</p>
       )}
-      {decided && !hasBye && (
+      {decided && !hasBye && !readOnly && (
         <button
           type="button"
           className="bracket-match__undo btn-undo"
@@ -102,7 +102,12 @@ function BracketMatch({ match, matchIndex, onSelectWinner, onUndo }) {
   );
 }
 
-export default function KnockoutBracket({ rounds, onSelectWinner, onUndoWinner }) {
+export default function KnockoutBracket({
+  rounds,
+  onSelectWinner,
+  onUndoWinner,
+  readOnly = false,
+}) {
   if (!rounds?.length) return null;
 
   const totalRounds = rounds.length;
@@ -134,10 +139,11 @@ export default function KnockoutBracket({ rounds, onSelectWinner, onUndoWinner }
                     <BracketMatch
                       match={match}
                       matchIndex={matchIndex}
+                      readOnly={readOnly}
                       onSelectWinner={(winner) =>
-                        onSelectWinner(roundIndex, match.id, winner)
+                        onSelectWinner?.(roundIndex, match.id, winner)
                       }
-                      onUndo={() => onUndoWinner(roundIndex, match.id)}
+                      onUndo={() => onUndoWinner?.(roundIndex, match.id)}
                     />
                   </div>
                 ))}

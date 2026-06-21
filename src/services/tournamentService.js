@@ -56,3 +56,15 @@ export async function deleteTournament(id) {
   const { error } = await supabase.from("tournaments").delete().eq("id", id);
   if (error) throw error;
 }
+
+export async function enableTournamentSharing(id) {
+  const { data, error } = await supabase
+    .from("tournaments")
+    .update({ share_enabled: true })
+    .eq("id", id)
+    .select("id, share_enabled")
+    .single();
+
+  if (error) throw error;
+  return data;
+}

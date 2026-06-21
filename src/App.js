@@ -9,6 +9,7 @@ import Guide from "./pages/Guide";
 import BuyMeACoffee from "./pages/BuyMeACoffee";
 import TournamentApp from "./pages/TournamentApp";
 import TournamentRedirect from "./components/TournamentRedirect";
+import SharedFixtures from "./pages/SharedFixtures";
 import "./App.css";
 
 export default function App() {
@@ -18,6 +19,7 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/share/:id" element={<SharedFixtures />} />
           <Route
             path="/"
             element={

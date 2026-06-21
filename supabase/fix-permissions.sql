@@ -4,6 +4,7 @@
 grant usage on schema public to anon, authenticated, service_role;
 
 grant select, insert, update, delete on table public.tournaments to authenticated;
+grant select on table public.tournaments to anon;
 grant select, insert, update, delete on table public.tournaments to service_role;
 
 -- 2) Ensure RLS is on
@@ -14,6 +15,7 @@ drop policy if exists "Users can view own tournaments" on public.tournaments;
 drop policy if exists "Users can insert own tournaments" on public.tournaments;
 drop policy if exists "Users can update own tournaments" on public.tournaments;
 drop policy if exists "Users can delete own tournaments" on public.tournaments;
+drop policy if exists "Anyone can view shared tournaments" on public.tournaments;
 
 create policy "Users can view own tournaments"
   on public.tournaments for select
@@ -35,6 +37,11 @@ create policy "Users can delete own tournaments"
   on public.tournaments for delete
   to authenticated
   using (auth.uid() = user_id);
+
+create policy "Anyone can view shared tournaments"
+  on public.tournaments for select
+  to anon
+  using (share_enabled = true);
 
 -- Saved teams (run saved-teams.sql first if table is missing)
 grant select, insert, update, delete on table public.saved_teams to authenticated;

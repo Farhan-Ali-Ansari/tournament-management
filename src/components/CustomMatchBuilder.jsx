@@ -15,6 +15,18 @@ export default function CustomMatchBuilder({
   const [teamAId, setTeamAId] = useState("");
   const [teamBId, setTeamBId] = useState("");
   const [localError, setLocalError] = useState("");
+  const [search, setSearch] = useState("");
+
+  const query = search.trim().toLowerCase();
+  const filteredTeams = query
+    ? teams.filter((t) => t.name.toLowerCase().includes(query))
+    : teams;
+  const filteredMatches = query
+    ? matches.filter(
+        (m) =>
+          m.teamA.toLowerCase().includes(query) || m.teamB.toLowerCase().includes(query)
+      )
+    : matches;
 
   const addMatch = () => {
     setLocalError("");
@@ -53,6 +65,20 @@ export default function CustomMatchBuilder({
 
   return (
     <div className="custom-builder">
+      <div className="fixture-search">
+        <label className="fixture-search__label" htmlFor="custom-league-team-search">
+          Search teams
+        </label>
+        <input
+          id="custom-league-team-search"
+          type="search"
+          className="team-form__input fixture-search__input"
+          placeholder="Type a team name…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          autoComplete="off"
+        />
+      </div>
       <p className="custom-builder__hint">{emptyHint}</p>
       {localError && (
         <div className="auth-form__alert auth-form__alert--error" role="alert">
@@ -68,7 +94,7 @@ export default function CustomMatchBuilder({
             onChange={(e) => setTeamAId(e.target.value)}
           >
             <option value="">Select team</option>
-            {teams.map((t) => (
+            {filteredTeams.map((t) => (
               <option key={t.id} value={t.id}>
                 {t.name}
               </option>
@@ -84,7 +110,7 @@ export default function CustomMatchBuilder({
             onChange={(e) => setTeamBId(e.target.value)}
           >
             <option value="">Select team</option>
-            {teams.map((t) => (
+            {filteredTeams.map((t) => (
               <option key={t.id} value={t.id}>
                 {t.name}
               </option>
@@ -98,7 +124,14 @@ export default function CustomMatchBuilder({
 
       {matches.length > 0 && (
         <ul className="custom-builder__list">
-          {matches.map((m, index) => (
+          {filteredMatches.length === 0 ? (
+            <li className="custom-builder__item custom-builder__item--empty">
+              No fixtures match “{search.trim()}”.
+            </li>
+          ) : (
+          filteredMatches.map((m) => {
+            const index = matches.findIndex((item) => item.id === m.id);
+            return (
             <li key={m.id} className="custom-builder__item">
               <span className="custom-builder__item-label">
                 {index + 1}. {m.teamA} vs {m.teamB}
@@ -111,7 +144,9 @@ export default function CustomMatchBuilder({
                 Remove
               </button>
             </li>
-          ))}
+            );
+          })
+          )}
         </ul>
       )}
 

@@ -179,3 +179,47 @@ export function getChampion(rounds) {
   if (!final || final.length !== 1) return null;
   return final[0].winner || null;
 }
+
+/** Remove a team from an in-progress bracket without resetting other results. */
+export function removeTeamFromKnockout(rounds, teamName) {
+  if (!rounds.length || !teamName) return rounds;
+
+  const updated = cloneRounds(rounds);
+
+  updated[0] = updated[0].map((match) => {
+    const hasA = match.teamA === teamName;
+    const hasB = match.teamB === teamName;
+    if (!hasA && !hasB) return match;
+
+    if (hasA && hasB) {
+      return { ...match, teamA: "", teamB: "", winner: "" };
+    }
+    if (hasA) {
+      const survivor = match.teamB && match.teamB !== "BYE" ? match.teamB : "";
+      if (survivor) {
+        return { ...match, teamA: survivor, teamB: "BYE", winner: survivor };
+      }
+      return { ...match, teamA: "", teamB: "", winner: "" };
+    }
+    const survivor = match.teamA && match.teamA !== "BYE" ? match.teamA : "";
+    if (survivor) {
+      return {
+        ...match,
+        teamB: "BYE",
+        winner: match.winner === teamName ? survivor : match.winner || survivor,
+      };
+    }
+    return { ...match, teamA: "", teamB: "", winner: "" };
+  });
+
+  for (let r = 1; r < updated.length; r++) {
+    updated[r] = updated[r].map((match) => ({
+      ...match,
+      teamA: match.teamA === teamName ? "" : match.teamA,
+      teamB: match.teamB === teamName ? "" : match.teamB,
+      winner: match.winner === teamName ? "" : match.winner,
+    }));
+  }
+
+  return replayAdvances(updated);
+}
