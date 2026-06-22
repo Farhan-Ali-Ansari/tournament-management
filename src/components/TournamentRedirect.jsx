@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Navigate, useParams } from "react-router-dom";
+import PageLoading from "./ui/PageLoading";
+import { Link, Navigate, useParams } from "react-router-dom";
 import { fetchTournament } from "../services/tournamentService";
 import { isCustomMode } from "../lib/tournamentModes";
 import { decodeFromDatabase } from "../lib/tournamentPersistence";
@@ -7,6 +8,7 @@ import { decodeFromDatabase } from "../lib/tournamentPersistence";
 export default function TournamentRedirect() {
   const { id } = useParams();
   const [target, setTarget] = useState(null);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -25,8 +27,15 @@ export default function TournamentRedirect() {
         else if (hasLeague || hasKnockout) setTarget("game");
         else if (teamCount >= 2) setTarget(isCustomMode(mode) ? "game" : "teams");
         else setTarget("setup");
-      } catch {
-        if (!cancelled) setTarget("setup");
+      } catch (err) {
+        if (!cancelled) {
+          const code = err?.code;
+          if (code === "PGRST116" || err?.message?.includes("0 rows")) {
+            setError("Tournament not found or you do not have access.");
+          } else {
+            setError(err.message || "Could not load tournament.");
+          }
+        }
       }
     })();
     return () => {
@@ -34,13 +43,22 @@ export default function TournamentRedirect() {
     };
   }, [id]);
 
-  if (!target) {
+  if (error) {
     return (
-      <div className="app-loading">
-        <div className="app-loading__spinner" aria-hidden="true" />
-        <p>Loading…</p>
+      <div className="shared-fixtures shared-fixtures--error">
+        <div className="shared-fixtures__card">
+          <h1 className="shared-fixtures__title">Tournament unavailable</h1>
+          <p className="shared-fixtures__message">{error}</p>
+          <Link to="/" className="btn-action">
+            Back to dashboard
+          </Link>
+        </div>
       </div>
     );
+  }
+
+  if (!target) {
+    return <PageLoading message="Loading tournament…" />;
   }
 
   return <Navigate to={`/tournament/${id}/${target}`} replace />;

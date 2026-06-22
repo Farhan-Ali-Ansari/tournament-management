@@ -4,16 +4,20 @@ import { useAuth } from "../context/AuthContext";
 import {
   createTournament,
   deleteTournament,
+  duplicateTournament,
   fetchTournaments,
+  renameTournament,
 } from "../services/tournamentService";
 import { isSupabaseConfigured } from "../lib/supabase";
 import { getSupabaseConfigMessage } from "../lib/supabaseConfigMessage";
 import { getAuthErrorMessage } from "../lib/authErrors";
 import DashboardLayout from "../components/DashboardLayout";
+import PageLoading from "../components/ui/PageLoading";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import { getModeLabel } from "../lib/tournamentModes";
-import { FORMAT_META_ID, resolveAppMode } from "../lib/tournamentPersistence";
+import { resolveAppMode } from "../lib/tournamentPersistence";
+import { getTournamentCardStatus } from "../lib/tournamentCompletion";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -21,6 +25,7 @@ export default function Dashboard() {
   const [tournaments, setTournaments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [busyId, setBusyId] = useState(null);
   const [error, setError] = useState("");
 
   const loadTournaments = useCallback(async () => {
@@ -58,11 +63,53 @@ export default function Dashboard() {
   const handleDelete = async (id, e) => {
     e.stopPropagation();
     if (!window.confirm("Delete this tournament? This cannot be undone.")) return;
+    setBusyId(id);
     try {
       await deleteTournament(id);
       setTournaments((prev) => prev.filter((t) => t.id !== id));
     } catch (err) {
       setError(getAuthErrorMessage(err));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleRename = async (t, e) => {
+    e.stopPropagation();
+    const next = window.prompt("Rename tournament", t.name?.trim() || "Untitled tournament");
+    if (next == null) return;
+    const trimmed = next.trim();
+    if (!trimmed) {
+      setError("Name cannot be empty.");
+      return;
+    }
+    setBusyId(t.id);
+    setError("");
+    try {
+      await renameTournament(t.id, trimmed);
+      setTournaments((prev) =>
+        prev.map((row) => (row.id === t.id ? { ...row, name: trimmed } : row))
+      );
+    } catch (err) {
+      setError(getAuthErrorMessage(err));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleDuplicate = async (id, e) => {
+    e.stopPropagation();
+    if (!user?.id) return;
+    setBusyId(id);
+    setError("");
+    try {
+      const copy = await duplicateTournament(user.id, id);
+      await loadTournaments();
+      navigate(`/tournament/${copy.id}/setup`);
+    } catch (err) {
+      setError(getAuthErrorMessage(err));
+    } finally {
+      setBusyId(null);
     }
   };
 
@@ -78,14 +125,6 @@ export default function Dashboard() {
     }
   };
 
-  const isActive = (t) => {
-    const metaOnly =
-      Array.isArray(t.matches) &&
-      t.matches.length === 1 &&
-      t.matches[0]?.id === FORMAT_META_ID;
-    const matchCount = metaOnly ? 0 : (t.matches?.length ?? 0);
-    return matchCount > 0 || (t.knockout_rounds?.length ?? 0) > 0;
-  };
 
   return (
     <DashboardLayout title="Your events" subtitle="Tournament suite">
@@ -121,10 +160,7 @@ export default function Dashboard() {
         </div>
 
         {loading ? (
-          <div className="app-loading app-loading--inline">
-            <div className="app-loading__spinner" aria-hidden="true" />
-            <p>Loading tournaments…</p>
-          </div>
+          <PageLoading message="Loading tournaments…" inline />
         ) : tournaments.length === 0 ? (
           <Card className="events-empty" hover={false}>
             <div className="events-empty__icon" aria-hidden="true" />
@@ -144,7 +180,8 @@ export default function Dashboard() {
             {tournaments.map((t, index) => {
               const appMode = resolveAppMode(t);
               const mode = getModeLabel(appMode);
-              const active = isActive(t);
+              const cardStatus = getTournamentCardStatus(t);
+              const isBusy = busyId === t.id;
               return (
                 <li
                   key={t.id}
@@ -163,8 +200,16 @@ export default function Dashboard() {
                         >
                           {mode}
                         </span>
-                        {active && (
-                          <span className="event-card__status">In play</span>
+                        {cardStatus && (
+                          <span
+                            className={`event-card__status event-card__status--${cardStatus}`}
+                          >
+                            {cardStatus === "finished"
+                              ? "Finished"
+                              : cardStatus === "tiebreaker"
+                                ? "Tiebreaker"
+                                : "In play"}
+                          </span>
                         )}
                       </div>
                       <h3 className="event-card__name">
@@ -182,18 +227,34 @@ export default function Dashboard() {
                           {formatDate(t.updated_at)}
                         </span>
                       </div>
-                      <span className="event-card__cta" aria-hidden="true">
-                        Open
-                      </span>
                     </button>
-                    <button
-                      type="button"
-                      className="event-card__delete"
-                      onClick={(e) => handleDelete(t.id, e)}
-                      aria-label={`Delete ${t.name}`}
-                    >
-                      Delete
-                    </button>
+                    <div className="event-card__actions">
+                      <button
+                        type="button"
+                        className="event-card__action"
+                        onClick={(e) => handleRename(t, e)}
+                        disabled={isBusy}
+                      >
+                        Rename
+                      </button>
+                      <button
+                        type="button"
+                        className="event-card__action"
+                        onClick={(e) => handleDuplicate(t.id, e)}
+                        disabled={isBusy}
+                      >
+                        Duplicate
+                      </button>
+                      <button
+                        type="button"
+                        className="event-card__delete"
+                        onClick={(e) => handleDelete(t.id, e)}
+                        disabled={isBusy}
+                        aria-label={`Delete ${t.name}`}
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </article>
                 </li>
               );

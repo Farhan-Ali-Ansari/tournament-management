@@ -58,7 +58,7 @@ export function encodeForDatabase({ name, mode, teams, matches, knockout_rounds 
       mode: MODES.LEAGUE,
       teams,
       matches: [createFormatMeta(MODES.CUSTOM_LEAGUE), ...realMatches],
-      knockout_rounds: [],
+      knockout_rounds: knockout_rounds ?? [],
     };
   }
 

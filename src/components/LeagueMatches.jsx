@@ -6,7 +6,12 @@ function matchIncludesTeam(match, query) {
   return match.teamA.toLowerCase().includes(q) || match.teamB.toLowerCase().includes(q);
 }
 
-export default function LeagueMatches({ matches, onScoreChange, readOnly = false }) {
+export default function LeagueMatches({
+  matches,
+  onScoreChange,
+  readOnly = false,
+  searchInputId = "fixture-team-search",
+}) {
   const [search, setSearch] = useState("");
 
   const visibleMatches = useMemo(
@@ -16,12 +21,12 @@ export default function LeagueMatches({ matches, onScoreChange, readOnly = false
 
   return (
     <div className="league-fixtures">
-      <div className="fixture-search">
-        <label className="fixture-search__label" htmlFor="fixture-team-search">
+      <div className="fixture-search" data-export-hide>
+        <label className="fixture-search__label" htmlFor={searchInputId}>
           Search teams
         </label>
         <input
-          id="fixture-team-search"
+          id={searchInputId}
           type="search"
           className="team-form__input fixture-search__input"
           placeholder="Type a team name…"

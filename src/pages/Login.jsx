@@ -52,7 +52,7 @@ export default function Login() {
 
   return (
     <AuthLayout
-      title=""
+      title="Sign in"
       subtitle="Made by Farhan"
       footer={
         <p>

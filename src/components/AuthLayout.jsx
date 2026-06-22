@@ -8,7 +8,7 @@ export default function AuthLayout({ title, subtitle, children, footer }) {
           <span className="auth-brand__mark" aria-hidden="true">
             Jackaroo Tournament Manager
           </span>
-          <h1 className="auth-page__title">{title}</h1>
+          {title && <h1 className="auth-page__title">{title}</h1>}
           {subtitle && <p className="auth-page__subtitle">{subtitle}</p>}
         </div>
         {children}

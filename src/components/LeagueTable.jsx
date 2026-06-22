@@ -18,7 +18,7 @@ export default function LeagueTable({ table, onViewDetails }) {
             Lost
           </span>
         </div>
-        <span className="standings-board__col standings-board__col--action" role="columnheader">
+        <span className="standings-board__col standings-board__col--action" role="columnheader" data-export-hide>
           Details
         </span>
       </div>
@@ -42,7 +42,7 @@ export default function LeagueTable({ table, onViewDetails }) {
                 <span className="standings-board__metric-value">{data.lost}</span>
               </div>
             </div>
-            <span className="standings-board__col standings-board__col--action" role="cell">
+            <span className="standings-board__col standings-board__col--action" role="cell" data-export-hide>
               <button
                 type="button"
                 className="standings-details-btn"

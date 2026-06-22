@@ -1,42 +1,108 @@
 import { useState } from "react";
-import { enableTournamentSharing } from "../services/tournamentService";
+import {
+  disableTournamentSharing,
+  enableTournamentSharing,
+} from "../services/tournamentService";
 import { getShareFixturesUrl } from "../lib/shareLink";
+import { copyToClipboard } from "../lib/clipboard";
 import { isShareMigrationError, SHARE_FIXTURES_MIGRATION_SQL } from "../lib/shareMigration";
+import { getAuthErrorMessage } from "../lib/authErrors";
 
-export default function ShareFixturesButton({ tournamentId, disabled }) {
+export default function ShareFixturesButton({
+  tournamentId,
+  disabled,
+  shareEnabled,
+  onShareEnabledChange,
+}) {
   const [copied, setCopied] = useState(false);
-  const [sharing, setSharing] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [needsMigration, setNeedsMigration] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleShare = async () => {
+  const shareUrl = tournamentId ? getShareFixturesUrl(tournamentId) : "";
+
+  const handleCopy = async () => {
+    if (!shareUrl) return;
+    const ok = await copyToClipboard(shareUrl);
+    if (ok) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } else {
+      setError("Could not copy link. Copy it manually from the address bar after opening share.");
+    }
+  };
+
+  const handleEnable = async () => {
     if (!tournamentId || disabled) return;
-    setSharing(true);
+    setBusy(true);
+    setError("");
     setNeedsMigration(false);
     try {
       await enableTournamentSharing(tournamentId);
-      const url = getShareFixturesUrl(tournamentId);
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
+      onShareEnabledChange?.(true);
+      await handleCopy();
     } catch (err) {
       if (isShareMigrationError(err)) {
         setNeedsMigration(true);
+      } else {
+        setError(getAuthErrorMessage(err));
       }
     } finally {
-      setSharing(false);
+      setBusy(false);
+    }
+  };
+
+  const handleDisable = async () => {
+    if (!tournamentId) return;
+    if (!window.confirm("Stop sharing? The link will no longer work.")) return;
+    setBusy(true);
+    setError("");
+    try {
+      await disableTournamentSharing(tournamentId);
+      onShareEnabledChange?.(false);
+    } catch (err) {
+      setError(getAuthErrorMessage(err));
+    } finally {
+      setBusy(false);
     }
   };
 
   return (
     <div className="share-fixtures">
-      <button
-        type="button"
-        className="mode-btn share-fixtures__btn"
-        onClick={handleShare}
-        disabled={disabled || sharing}
-      >
-        {copied ? "Link copied!" : sharing ? "Preparing…" : "Copy share link"}
-      </button>
+      {shareEnabled ? (
+        <div className="share-fixtures__actions">
+          <button
+            type="button"
+            className="mode-btn share-fixtures__btn"
+            onClick={handleCopy}
+            disabled={disabled || busy}
+          >
+            {copied ? "Link copied!" : "Copy share link"}
+          </button>
+          <button
+            type="button"
+            className="btn-reset mode-btn share-fixtures__btn share-fixtures__btn--secondary"
+            onClick={handleDisable}
+            disabled={busy}
+          >
+            Stop sharing
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          className="mode-btn share-fixtures__btn"
+          onClick={handleEnable}
+          disabled={disabled || busy}
+        >
+          {busy ? "Preparing…" : copied ? "Link copied!" : "Copy share link"}
+        </button>
+      )}
+      {error && (
+        <p className="share-fixtures__error" role="alert">
+          {error}
+        </p>
+      )}
       {needsMigration && (
         <div className="share-fixtures__migration" role="alert">
           <p>
@@ -46,7 +112,7 @@ export default function ShareFixturesButton({ tournamentId, disabled }) {
           <button
             type="button"
             className="btn-text"
-            onClick={() => navigator.clipboard.writeText(SHARE_FIXTURES_MIGRATION_SQL)}
+            onClick={() => copyToClipboard(SHARE_FIXTURES_MIGRATION_SQL)}
           >
             Copy SQL
           </button>

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { copyToClipboard } from "../lib/clipboard";
 import DashboardLayout from "../components/DashboardLayout";
 
 const JAZZCASH_NUMBER = "03213753740";
@@ -31,12 +32,10 @@ export default function BuyMeACoffee() {
   const [copied, setCopied] = useState(false);
 
   const copyNumber = async () => {
-    try {
-      await navigator.clipboard.writeText(JAZZCASH_NUMBER);
+    const ok = await copyToClipboard(JAZZCASH_NUMBER);
+    if (ok) {
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2200);
-    } catch {
-      /* fallback: user can tap tel link */
     }
   };
 

@@ -11,3 +11,5 @@ create policy "Anyone can view shared tournaments"
   on public.tournaments for select
   to anon
   using (share_enabled = true);
+
+-- Optional: run supabase/shared-tournaments-view.sql for a safer public API (no user_id).

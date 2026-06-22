@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import { exportScreenHD } from "../lib/exportImage";
+import { exportElementFullContent } from "../lib/exportImage";
 import TeamForm from "../components/TeamForm";
 import TeamList from "../components/TeamList";
 import TournamentTeamPicker from "../components/TournamentTeamPicker";
@@ -31,9 +31,24 @@ import { useAuth } from "../context/AuthContext";
 import { useSavedTeams } from "../hooks/useSavedTeams";
 import { useTournamentData } from "../hooks/useTournamentData";
 import { getAuthErrorMessage } from "../lib/authErrors";
+import PageLoading from "../components/ui/PageLoading";
+import CloseIconButton from "../components/ui/CloseIconButton";
 import ShareFixturesButton from "../components/ShareFixturesButton";
+import SaveStatusIndicator from "../components/SaveStatusIndicator";
+import DatabaseSetupAlert from "../components/DatabaseSetupAlert";
 import { calculateLeagueTable } from "../lib/leagueTable";
 import { applyBinaryLeagueScore } from "../lib/leagueScores";
+import { getTournamentFinishInfo } from "../lib/tournamentCompletion";
+import TournamentFinishScene from "../components/TournamentFinishScene";
+import LeagueTiebreakerPanel from "../components/LeagueTiebreakerPanel";
+import {
+  buildTiebreakerLeagueMatches,
+  calculateTiebreakerTableFromMatches,
+  getTiebreakerParticipantNames,
+  hasTiebreakerHistory,
+  removeTiebreakerMatches,
+  splitMatches,
+} from "../lib/leagueTiebreaker";
 
 const VIEW_FROM_PATH = {
   setup: "setup",
@@ -62,14 +77,21 @@ export default function TournamentApp() {
   const [view, setView] = useState(initialView);
   const [leagueTab, setLeagueTab] = useState("fixtures");
   const [detailTeam, setDetailTeam] = useState(null);
+  const [tiebreakerDetailTeam, setTiebreakerDetailTeam] = useState(null);
   const [draftLeagueMatches, setDraftLeagueMatches] = useState([]);
   const [draftKnockoutPairings, setDraftKnockoutPairings] = useState([]);
+  const [error, setError] = useState("");
+  const [showFinishScene, setShowFinishScene] = useState(false);
+  const wasFinishedRef = useRef(false);
 
   const {
     loading,
-    saving,
-    error,
-    setError,
+    loadError,
+    saveStatus,
+    saveError,
+    modeSetupRequired,
+    shareEnabled,
+    setShareEnabled,
     tournamentName,
     setTournamentName,
     teams,
@@ -81,17 +103,24 @@ export default function TournamentApp() {
     knockoutRounds,
     setKnockoutRounds,
     persist,
+    retrySave,
   } = useTournamentData(tournamentId);
 
   const {
     savedTeams,
     loading: savedLoading,
+    error: savedTeamsError,
     addSavedTeam,
     renameSavedTeam,
   } = useSavedTeams(user?.id);
 
+  const { regularMatches, tiebreakerMatches } = useMemo(
+    () => splitMatches(matches),
+    [matches]
+  );
+
   const isStarted =
-    matches.length > 0 || knockoutRounds.length > 0;
+    regularMatches.length > 0 || knockoutRounds.length > 0;
 
   useEffect(() => {
     const v = VIEW_FROM_PATH[pathView];
@@ -137,9 +166,14 @@ export default function TournamentApp() {
     if (isKnockoutMode(mode) && knockoutRounds.length > 0 && knockoutExportRef.current) {
       target = knockoutExportRef.current;
       suffix = "knockout-bracket";
-    } else if (isLeagueMode(mode) && matches.length > 0 && leagueExportRef.current) {
+    } else if (isLeagueMode(mode) && regularMatches.length > 0 && leagueExportRef.current) {
       target = leagueExportRef.current;
-      suffix = leagueTab === "standings" ? "league-table" : "league-fixtures";
+      suffix =
+        leagueTab === "standings"
+          ? "league-table"
+          : leagueTab === "tiebreaker"
+            ? "league-tiebreaker"
+            : "league-fixtures";
     }
 
     if (!target) {
@@ -154,9 +188,10 @@ export default function TournamentApp() {
         .trim()
         .replace(/[^\w-]+/g, "-")
         .slice(0, 48);
-      await exportScreenHD(target, `${safeName}-${suffix}.png`, {
-        scrollContainer:
-          isKnockoutMode(mode) ? bracketScrollRef.current : target,
+      await exportElementFullContent(target, `${safeName}-${suffix}.png`, {
+        width: target.offsetWidth,
+        frameElement: target,
+        expandHorizontal: isKnockoutMode(mode),
       });
     } catch (err) {
       setError(err.message || "Could not export image.");
@@ -285,7 +320,7 @@ export default function TournamentApp() {
   const generateLeagueMatches = () => {
     if (teams.length < 2) return setError("Need at least 2 teams.");
     if (
-      matches.length > 0 &&
+      regularMatches.length > 0 &&
       !window.confirm("This will overwrite current scores. Continue?")
     ) {
       return;
@@ -392,13 +427,82 @@ export default function TournamentApp() {
     goTo("game");
   };
 
-  const tableData = calculateLeagueTable(teams, matches);
+  const tableData = calculateLeagueTable(teams, regularMatches);
+
+  const finishInfo = useMemo(
+    () =>
+      getTournamentFinishInfo({
+        mode,
+        matches,
+        knockoutRounds,
+        table: tableData,
+      }),
+    [mode, matches, knockoutRounds, tableData]
+  );
+
+  const showTiebreakerTab =
+    hasTiebreakerHistory(tiebreakerMatches) || finishInfo.needsTiebreaker;
+
+  const tiebreakerTeams =
+    finishInfo.tiedTeams?.length > 0
+      ? finishInfo.tiedTeams
+      : getTiebreakerParticipantNames(tiebreakerMatches);
+
+  const tiebreakerTableData = useMemo(() => {
+    if (!tiebreakerMatches.length) return {};
+    return (
+      finishInfo.tiebreakerTable ||
+      calculateTiebreakerTableFromMatches(tiebreakerMatches)
+    );
+  }, [tiebreakerMatches, finishInfo.tiebreakerTable]);
+
+  useEffect(() => {
+    if (!finishInfo.finished) {
+      wasFinishedRef.current = false;
+      setShowFinishScene(false);
+      if (finishInfo.needsTiebreaker && isLeagueMode(mode)) {
+        setLeagueTab("tiebreaker");
+      }
+      return;
+    }
+    if (!wasFinishedRef.current) {
+      setShowFinishScene(true);
+      if (isLeagueMode(mode)) setLeagueTab("standings");
+    }
+    wasFinishedRef.current = true;
+  }, [finishInfo.finished, finishInfo.needsTiebreaker, mode]);
+
+  const startTiebreaker = () => {
+    if (!finishInfo.tiedTeams?.length) return;
+    const newFixtures = buildTiebreakerLeagueMatches(
+      finishInfo.tiedTeams,
+      tiebreakerMatches
+    );
+    if (!newFixtures.length) return;
+    setMatches((prev) => [...prev, ...newFixtures]);
+    setLeagueTab("tiebreaker");
+  };
+
+  const resetTiebreaker = () => {
+    if (!window.confirm("Reset the tiebreaker league?")) return;
+    setMatches((prev) => removeTiebreakerMatches(prev));
+    setTiebreakerDetailTeam(null);
+  };
 
   if (loading) {
+    return <PageLoading message="Loading tournament…" />;
+  }
+
+  if (loadError) {
     return (
-      <div className="app-loading">
-        <div className="app-loading__spinner" aria-hidden="true" />
-        <p>Loading tournament…</p>
+      <div className="shared-fixtures shared-fixtures--error">
+        <div className="shared-fixtures__card">
+          <h1 className="shared-fixtures__title">Tournament unavailable</h1>
+          <p className="shared-fixtures__message">{loadError}</p>
+          <button type="button" className="btn-action" onClick={() => navigate("/")}>
+            Back to dashboard
+          </button>
+        </div>
       </div>
     );
   }
@@ -525,7 +629,13 @@ export default function TournamentApp() {
               {error}
             </div>
           )}
-          {saving && <p className="save-indicator">Saving…</p>}
+          {saveError && (
+            <div className="auth-form__alert auth-form__alert--error" role="alert">
+              {saveError}
+            </div>
+          )}
+          {modeSetupRequired && <DatabaseSetupAlert />}
+          <SaveStatusIndicator status={saveStatus} onRetry={retrySave} />
           <TournamentTeamPicker
             savedTeams={savedTeams}
             savedLoading={savedLoading}
@@ -581,20 +691,33 @@ export default function TournamentApp() {
         >
           Standings
         </button>
+        {showTiebreakerTab && (
+          <button
+            type="button"
+            className={`league-tab ${leagueTab === "tiebreaker" ? "league-tab--active" : ""}`}
+            onClick={() => setLeagueTab("tiebreaker")}
+          >
+            Tiebreaker
+          </button>
+        )}
       </div>
       <div ref={leagueExportRef} className="export-sheet">
         <header className="export-sheet__header">
           <p className="export-sheet__eyebrow">{exportEyebrow}</p>
           <h2 className="export-sheet__title">{tournamentName}</h2>
           <p className="export-sheet__subtitle">
-            {leagueTab === "standings" ? "Standings table" : "Match schedule"}
+            {leagueTab === "standings"
+              ? "Standings table"
+              : leagueTab === "tiebreaker"
+                ? "Tiebreaker league"
+                : "Match schedule"}
           </p>
         </header>
         <div className="export-sheet__body">
           {leagueTab === "fixtures" && (
             <div className="panel-card panel-card--fixtures">
               <h3 className="section-title">Match fixtures</h3>
-              <LeagueMatches matches={matches} onScoreChange={handleScoreChange} />
+              <LeagueMatches matches={regularMatches} onScoreChange={handleScoreChange} />
             </div>
           )}
           {leagueTab === "standings" && (
@@ -603,10 +726,32 @@ export default function TournamentApp() {
               <LeagueTable table={tableData} onViewDetails={setDetailTeam} />
             </div>
           )}
+          {leagueTab === "tiebreaker" && showTiebreakerTab && (
+            <div className="panel-card panel-card--tiebreaker">
+              <h3 className="section-title">Tiebreaker league</h3>
+              <LeagueTiebreakerPanel
+                tiedTeams={tiebreakerTeams}
+                tiebreakerMatches={tiebreakerMatches}
+                tiebreakerTable={tiebreakerTableData}
+                playoffStarted={finishInfo.tiebreakerStarted || hasTiebreakerHistory(tiebreakerMatches)}
+                needsNextRound={finishInfo.tiebreakerNeedsNextRound}
+                completed={finishInfo.finished && finishInfo.hadTiebreaker}
+                onStart={startTiebreaker}
+                onScoreChange={handleScoreChange}
+                onViewDetails={setTiebreakerDetailTeam}
+                onReset={resetTiebreaker}
+              />
+            </div>
+          )}
         </div>
       </div>
       <div className="league-content__actions">
-        <ShareFixturesButton tournamentId={tournamentId} disabled={matches.length === 0} />
+        <ShareFixturesButton
+          tournamentId={tournamentId}
+          disabled={regularMatches.length === 0}
+          shareEnabled={shareEnabled}
+          onShareEnabledChange={setShareEnabled}
+        />
         <button type="button" className="btn-reset mode-btn" onClick={onRegenerate}>
           {regenerateLabel}
         </button>
@@ -647,6 +792,8 @@ export default function TournamentApp() {
         <ShareFixturesButton
           tournamentId={tournamentId}
           disabled={knockoutRounds.length === 0}
+          shareEnabled={shareEnabled}
+          onShareEnabledChange={setShareEnabled}
         />
         <button type="button" className="btn-reset mode-btn" onClick={onReset}>
           {resetLabel}
@@ -688,16 +835,26 @@ export default function TournamentApp() {
           <p className="app-header__subtitle">
             {tournamentName} · <span className="mode-badge">{modeLabel} only</span>
           </p>
-          {saving && <p className="save-indicator save-indicator--header">Saving…</p>}
+          <SaveStatusIndicator status={saveStatus} onRetry={retrySave} />
         </div>
       </header>
 
-      {error && (
+      {(error || saveError) && (
         <div className="app-banner app-banner--error" role="alert">
-          {error}
+          {error || saveError}
           <button type="button" onClick={() => setError("")} aria-label="Dismiss">
             ×
           </button>
+        </div>
+      )}
+      {modeSetupRequired && (
+        <div className="app-banner app-banner--setup">
+          <DatabaseSetupAlert />
+        </div>
+      )}
+      {savedTeamsError && (
+        <div className="app-banner app-banner--error" role="alert">
+          {savedTeamsError}
         </div>
       )}
 
@@ -708,14 +865,12 @@ export default function TournamentApp() {
         <div className="panel-card sidebar-panel__inner">
           <div className="sidebar-panel__head">
             <h3 className="section-title">Teams</h3>
-            <button
-              type="button"
-              className="sidebar-panel__close"
+            <CloseIconButton
+              className="sidebar-panel__close icon-btn--close-sm"
+              size={18}
+              label="Close teams panel"
               onClick={() => setMobileTeamsOpen(false)}
-              aria-label="Close teams panel"
-            >
-              ×
-            </button>
+            />
           </div>
           <TeamForm onAddTeam={addNewTeam} />
           <TeamList
@@ -724,31 +879,39 @@ export default function TournamentApp() {
             onRename={renameTeam}
           />
           <div className="sidebar-actions">
-            <button
-              type="button"
-              className="mode-btn"
-              onClick={() => navigate("/guide")}
-            >
-              Concierge guide
-            </button>
-            <button
-              type="button"
-              className="mode-btn mode-btn--coffee"
-              onClick={() => navigate("/coffee")}
-            >
-              Buy me a coffee
-            </button>
-            <button
-              type="button"
-              className="mode-btn btn-action"
-              onClick={takeScreenshot}
-              disabled={exporting}
-            >
-              {exporting ? "Exporting…" : "Save screenshot"}
-            </button>
-            <button type="button" className="btn-reset mode-btn" onClick={resetTournamentData}>
-              Reset all
-            </button>
+            <div className="sidebar-actions__group">
+              <button
+                type="button"
+                className="mode-btn sidebar-actions__btn"
+                onClick={() => navigate("/guide")}
+              >
+                Concierge guide
+              </button>
+              <button
+                type="button"
+                className="mode-btn mode-btn--coffee sidebar-actions__btn"
+                onClick={() => navigate("/coffee")}
+              >
+                Buy me a coffee
+              </button>
+            </div>
+            <div className="sidebar-actions__group">
+              <button
+                type="button"
+                className="mode-btn btn-action sidebar-actions__btn"
+                onClick={takeScreenshot}
+                disabled={exporting}
+              >
+                {exporting ? "Exporting…" : "Save screenshot"}
+              </button>
+              <button
+                type="button"
+                className="btn-reset mode-btn sidebar-actions__btn"
+                onClick={resetTournamentData}
+              >
+                Reset all
+              </button>
+            </div>
           </div>
         </div>
       </aside>
@@ -763,10 +926,34 @@ export default function TournamentApp() {
       )}
 
       <div className="tournament-main">
+        {view === "game" && finishInfo.needsTiebreaker && (
+          <button
+            type="button"
+            className="finish-banner finish-banner--tie"
+            onClick={() => setLeagueTab("tiebreaker")}
+          >
+            <span className="finish-banner__label">Tie at the top</span>
+            <span className="finish-banner__winner">{finishInfo.tiedTeams?.join(" · ")}</span>
+            <span className="finish-banner__cta">Play tiebreaker league</span>
+          </button>
+        )}
+        {view === "game" && finishInfo.finished && !showFinishScene && (
+          <button
+            type="button"
+            className="finish-banner"
+            onClick={() => setShowFinishScene(true)}
+          >
+            <span className="finish-banner__label">Tournament complete</span>
+            <span className="finish-banner__winner">
+              {finishInfo.winners.join(" · ")}
+            </span>
+            <span className="finish-banner__cta">View celebration</span>
+          </button>
+        )}
         <main className="main-panel">
           {mode === MODES.LEAGUE && (
             <>
-              {matches.length === 0 ? (
+              {regularMatches.length === 0 ? (
                 <div className="empty-state">
                   <h3>{teams.length} teams ready</h3>
                   <button type="button" className="btn-action" onClick={generateLeagueMatches}>
@@ -774,14 +961,17 @@ export default function TournamentApp() {
                   </button>
                 </div>
               ) : (
-                renderLeagueGame("Regenerate fixtures", () => setMatches([]))
+                renderLeagueGame("Regenerate fixtures", () => {
+                  setMatches([]);
+                  setKnockoutRounds([]);
+                })
               )}
             </>
           )}
 
           {mode === MODES.CUSTOM_LEAGUE && (
             <>
-              {matches.length === 0 ? (
+              {regularMatches.length === 0 ? (
                 <div className="empty-state empty-state--builder">
                   <h3>{teams.length} teams · build your fixtures</h3>
                   <CustomMatchBuilder
@@ -797,6 +987,7 @@ export default function TournamentApp() {
                 renderLeagueGame("Edit fixtures", () => {
                   setDraftLeagueMatches(matches);
                   setMatches([]);
+                  setKnockoutRounds([]);
                 })
               )}
             </>
@@ -855,14 +1046,25 @@ export default function TournamentApp() {
         >
           Roster
         </button>
-        {isLeagueMode(mode) && matches.length > 0 && (
-          <button
-            type="button"
-            className={leagueTab === "standings" ? "is-active" : ""}
-            onClick={() => setLeagueTab("standings")}
-          >
-            Table
-          </button>
+        {isLeagueMode(mode) && regularMatches.length > 0 && (
+          <>
+            <button
+              type="button"
+              className={leagueTab === "standings" ? "is-active" : ""}
+              onClick={() => setLeagueTab("standings")}
+            >
+              Table
+            </button>
+            {showTiebreakerTab && (
+              <button
+                type="button"
+                className={leagueTab === "tiebreaker" ? "is-active" : ""}
+                onClick={() => setLeagueTab("tiebreaker")}
+              >
+                Tiebreak
+              </button>
+            )}
+          </>
         )}
         <button
           type="button"
@@ -874,13 +1076,37 @@ export default function TournamentApp() {
         </button>
       </nav>
 
+      {showFinishScene && finishInfo.finished && view === "game" && (
+        <TournamentFinishScene
+          tournamentName={tournamentName}
+          modeLabel={modeLabel}
+          teamCount={teams.length}
+          winners={finishInfo.winners}
+          subtitle={finishInfo.subtitle}
+          tournamentId={tournamentId}
+          shareEnabled={shareEnabled}
+          onShareEnabledChange={setShareEnabled}
+          onClose={() => setShowFinishScene(false)}
+        />
+      )}
+
       {detailTeam && (
         <LeagueTeamDetailModal
           teamName={detailTeam}
           stats={tableData[detailTeam]}
-          matches={matches}
+          matches={regularMatches}
           tournamentName={tournamentName}
           onClose={() => setDetailTeam(null)}
+        />
+      )}
+
+      {tiebreakerDetailTeam && (
+        <LeagueTeamDetailModal
+          teamName={tiebreakerDetailTeam}
+          stats={tiebreakerTableData[tiebreakerDetailTeam]}
+          matches={tiebreakerMatches}
+          tournamentName={tournamentName}
+          onClose={() => setTiebreakerDetailTeam(null)}
         />
       )}
     </div>

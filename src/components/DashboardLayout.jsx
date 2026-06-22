@@ -2,6 +2,8 @@ import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import PageShell from "./ui/PageShell";
+import CloseIconButton from "./ui/CloseIconButton";
+import MenuIcon from "./ui/MenuIcon";
 
 export default function DashboardLayout({ children, title, subtitle }) {
   const { user, signOut } = useAuth();
@@ -35,6 +37,15 @@ export default function DashboardLayout({ children, title, subtitle }) {
         onClick={closeDrawer}
       >
         Saved Teams
+      </NavLink>
+      <NavLink
+        to="/settings"
+        className={({ isActive }) =>
+          `nav-drawer__link ${isActive ? "is-active" : ""}`
+        }
+        onClick={closeDrawer}
+      >
+        Settings
       </NavLink>
       <NavLink
         to="/guide"
@@ -83,7 +94,15 @@ export default function DashboardLayout({ children, title, subtitle }) {
             onClick={closeDrawer}
           />
           <nav className="nav-drawer nav-drawer--open" aria-label="Menu">
-            <div className="nav-drawer__brand">Jackaroo Tournament Manager</div>
+            <div className="nav-drawer__head">
+              <div className="nav-drawer__brand">Jackaroo Tournament Manager</div>
+              <CloseIconButton
+                className="icon-btn--close-sm"
+                size={18}
+                label="Close menu"
+                onClick={closeDrawer}
+              />
+            </div>
             {navItems}
           </nav>
         </>
@@ -98,7 +117,7 @@ export default function DashboardLayout({ children, title, subtitle }) {
               aria-label="Open menu"
               onClick={() => setDrawerOpen(true)}
             >
-              ☰
+              <MenuIcon />
             </button>
             <button
               type="button"
@@ -135,6 +154,9 @@ export default function DashboardLayout({ children, title, subtitle }) {
           </NavLink>
           <NavLink to="/guide" className={({ isActive }) => (isActive ? "is-active" : "")}>
             Guide
+          </NavLink>
+          <NavLink to="/settings" className={({ isActive }) => (isActive ? "is-active" : "")}>
+            Settings
           </NavLink>
           <NavLink to="/coffee" className={({ isActive }) => (isActive ? "is-active" : "")}>
             Coffee

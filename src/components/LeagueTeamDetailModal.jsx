@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import CloseIconButton from "./ui/CloseIconButton";
 import { exportElementFullContent } from "../lib/exportImage";
 
 export default function LeagueTeamDetailModal({
@@ -55,6 +56,7 @@ export default function LeagueTeamDetailModal({
       setExporting(false);
     }
   };
+
   return (
     <div className="team-detail-modal" role="dialog" aria-modal="true" aria-labelledby="team-detail-title">
       <button
@@ -64,56 +66,62 @@ export default function LeagueTeamDetailModal({
         onClick={onClose}
       />
       <div ref={panelRef} className="team-detail-modal__panel">
+        <CloseIconButton
+          className="team-detail-modal__close icon-btn--close-sm"
+          size={18}
+          onClick={onClose}
+          data-export-hide
+        />
+
         <div ref={captureRef} className="team-detail-modal__capture">
-        <header className="team-detail-modal__header">          <h2 id="team-detail-title">{teamName}</h2>
-          <button type="button" className="team-detail-modal__close" onClick={onClose} aria-label="Close">
-            ×
-          </button>
-        </header>
+          <header className="team-detail-modal__header">
+            <h2 id="team-detail-title">{teamName}</h2>
+          </header>
 
-        {stats && (
-          <div className="team-detail-modal__stats team-detail-modal__stats--compact">
-            <div className="team-detail-stat">
-              <span className="team-detail-stat__value">{stats.played}</span>
-              <span className="team-detail-stat__label">Played</span>
+          {stats && (
+            <div className="team-detail-modal__stats team-detail-modal__stats--compact">
+              <div className="team-detail-stat">
+                <span className="team-detail-stat__value">{stats.played}</span>
+                <span className="team-detail-stat__label">Played</span>
+              </div>
+              <div className="team-detail-stat">
+                <span className="team-detail-stat__value">{stats.won}</span>
+                <span className="team-detail-stat__label">Won</span>
+              </div>
+              <div className="team-detail-stat">
+                <span className="team-detail-stat__value">{stats.lost}</span>
+                <span className="team-detail-stat__label">Lost</span>
+              </div>
             </div>
-            <div className="team-detail-stat">
-              <span className="team-detail-stat__value">{stats.won}</span>
-              <span className="team-detail-stat__label">Won</span>
-            </div>
-            <div className="team-detail-stat">
-              <span className="team-detail-stat__value">{stats.lost}</span>
-              <span className="team-detail-stat__label">Lost</span>
-            </div>
-          </div>
-        )}
-
-        <section className="team-detail-modal__fixtures">
-          <h3 className="section-title">Who they played</h3>
-          {teamMatches.length === 0 ? (
-            <p className="team-detail-modal__empty">No fixtures yet.</p>
-          ) : (
-            <ul className="team-detail-fixtures">
-              {teamMatches.map((m) => (
-                <li key={m.id} className="team-detail-fixture">
-                  <span className="team-detail-fixture__opponent">vs {opponent(m)}</span>
-                  <span className="team-detail-fixture__score">
-                    {m.scoreA === "" || m.scoreB === ""
-                      ? "—"
-                      : `${teamScore(m)} – ${oppScore(m)}`}
-                  </span>
-                  <span
-                    className={`team-detail-fixture__result team-detail-fixture__result--${resultLabel(m).toLowerCase()}`}
-                  >
-                    {resultLabel(m)}
-                  </span>
-                </li>
-              ))}
-            </ul>
           )}
-        </section>
+
+          <section className="team-detail-modal__fixtures">
+            <h3 className="section-title">Who they played</h3>
+            {teamMatches.length === 0 ? (
+              <p className="team-detail-modal__empty">No fixtures yet.</p>
+            ) : (
+              <ul className="team-detail-fixtures">
+                {teamMatches.map((m) => (
+                  <li key={m.id} className="team-detail-fixture">
+                    <span className="team-detail-fixture__opponent">vs {opponent(m)}</span>
+                    <span className="team-detail-fixture__score">
+                      {m.scoreA === "" || m.scoreB === ""
+                        ? "—"
+                        : `${teamScore(m)} – ${oppScore(m)}`}
+                    </span>
+                    <span
+                      className={`team-detail-fixture__result team-detail-fixture__result--${resultLabel(m).toLowerCase()}`}
+                    >
+                      {resultLabel(m)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
         </div>
-        <footer className="team-detail-modal__footer">
+
+        <footer className="team-detail-modal__footer" data-export-hide>
           <button
             type="button"
             className="btn-action team-detail-modal__screenshot"

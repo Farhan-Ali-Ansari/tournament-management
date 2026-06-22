@@ -4,7 +4,7 @@ function cloneRounds(rounds) {
   return rounds.map((round) => round.map((m) => ({ ...m })));
 }
 
-export function advanceWinner(rounds, roundIndex, matchIndex, winner) {
+function advanceWinner(rounds, roundIndex, matchIndex, winner) {
   const nextRound = roundIndex + 1;
   if (!rounds[nextRound] || !winner) return;
   const nextMatchIndex = Math.floor(matchIndex / 2);
@@ -12,7 +12,7 @@ export function advanceWinner(rounds, roundIndex, matchIndex, winner) {
   rounds[nextRound][nextMatchIndex][slot] = winner;
 }
 
-export function replayAdvances(rounds) {
+function replayAdvances(rounds) {
   const updated = cloneRounds(rounds);
 
   // Keep user-picked winners on rounds 1+; only rebuild who feeds into each slot.

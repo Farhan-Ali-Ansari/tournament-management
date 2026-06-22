@@ -1,17 +1,14 @@
 import { useState } from "react";
+import { copyToClipboard } from "../lib/clipboard";
 import { CUSTOM_MODES_MIGRATION_SQL } from "../lib/requiredDbMigration";
 
-export default function DatabaseSetupAlert({ onDismiss }) {
+export default function DatabaseSetupAlert() {
   const [copied, setCopied] = useState(false);
 
   const copySql = async () => {
-    try {
-      await navigator.clipboard.writeText(CUSTOM_MODES_MIGRATION_SQL);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
-    } catch {
-      setCopied(false);
-    }
+    const ok = await copyToClipboard(CUSTOM_MODES_MIGRATION_SQL);
+    setCopied(ok);
+    if (ok) setTimeout(() => setCopied(false), 2500);
   };
 
   return (
@@ -32,11 +29,6 @@ export default function DatabaseSetupAlert({ onDismiss }) {
         <button type="button" className="btn-action" onClick={copySql}>
           {copied ? "Copied!" : "Copy SQL"}
         </button>
-        {onDismiss && (
-          <button type="button" className="btn-text" onClick={onDismiss}>
-            Dismiss
-          </button>
-        )}
       </div>
       <p className="db-setup-alert__file-hint">
         Or open <code>supabase/FIX-CUSTOM-MODES.sql</code> in this repo.

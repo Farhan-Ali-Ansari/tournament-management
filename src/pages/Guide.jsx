@@ -57,8 +57,10 @@ const sections = [
       <>
         <p>
           <strong>Overview</strong> lists every tournament. Each card shows the format badge, team
-          count, last updated date, and <strong>In play</strong> when fixtures or a bracket have
-          started.
+          count, last updated date, <strong>In play</strong> while fixtures or a bracket are
+          ongoing, <strong>Tiebreaker</strong> when the league ended in a tie at the top, and{" "}
+          <strong>Finished</strong> when every league score is in (with a single champion, including
+          after tiebreaker playoffs) or a knockout champion is crowned.
         </p>
         <ul className="guide-list">
           <li>
@@ -66,6 +68,12 @@ const sections = [
           </li>
           <li>
             <strong>Open</strong> — continue setup, teams, or the game view.
+          </li>
+          <li>
+            <strong>Rename</strong> — change the tournament title from the card menu.
+          </li>
+          <li>
+            <strong>Duplicate</strong> — copy teams and format into a new tournament.
           </li>
           <li>
             <strong>Delete</strong> — removes the tournament permanently.
@@ -161,9 +169,13 @@ const sections = [
       <>
         <h4 className="guide-subtitle">Fixtures tab</h4>
         <ul className="guide-list">
-          <li>Enter home and away scores for each match.</li>
+          <li>
+            Enter <strong>0</strong> or <strong>1</strong> for each team — the other score updates
+            automatically (win = 1, loss = 0).
+          </li>
+          <li>Clear a score to reset a match to pending.</li>
           <li>Standings update when both scores are filled.</li>
-          <li>Wins, draws, and losses are tracked internally for sorting (draws count in results).</li>
+          <li>Use <strong>Search teams</strong> to filter the fixture list.</li>
         </ul>
         <h4 className="guide-subtitle">Standings tab</h4>
         <ul className="guide-list">
@@ -173,12 +185,40 @@ const sections = [
           </li>
           <li>Teams sort by most wins, then fewer losses, then more games played.</li>
           <li>
-            Tap <strong>View</strong> to open a popup with Played / Won / Lost and a list of who
-            they played, scores, and result (Win, Loss, Draw, or Pending).
+            Tap <strong>View</strong> to open a popup with Played / Won / Lost, full fixture list
+            (played matches first), screenshot export, and Win / Loss / Pending results.
           </li>
+        </ul>
+        <h4 className="guide-subtitle">Tiebreaker tab</h4>
+        <ul className="guide-list">
+          <li>
+            When every fixture is scored and two or more teams are tied for most wins, the season
+            is not finished until a tiebreaker decides one champion.
+          </li>
+          <li>
+            Open the <strong>Tiebreaker</strong> tab and tap <strong>Start tiebreaker league</strong>{" "}
+            to generate a separate mini-league between the tied teams only.
+          </li>
+          <li>
+            Tiebreaker has its own <strong>Fixtures</strong> and <strong>Standings</strong> tabs —
+            stats are separate from the main season table.
+          </li>
+          <li>
+            Enter scores the same way (0/1). If teams are still tied after every tiebreaker
+            fixture, start another tiebreaker round.
+          </li>
+          <li>
+            Tiebreaker fixtures and standings stay on the <strong>Tiebreaker</strong> tab after
+            the tournament finishes — separate from the main season, kept as a permanent record.
+          </li>
+          <li>Shared fixture links show the tiebreaker league while it is in progress and after.</li>
         </ul>
         <h4 className="guide-subtitle">Actions</h4>
         <ul className="guide-list">
+          <li>
+            <strong>Copy share link</strong> — read-only fixtures page for others (use{" "}
+            <strong>Stop sharing</strong> to revoke).
+          </li>
           <li>
             <strong>Regenerate fixtures</strong> (League) — new full schedule; scores cleared.
           </li>

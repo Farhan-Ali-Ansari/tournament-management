@@ -1,17 +1,12 @@
 import { Navigate, useLocation } from "react-router-dom";
+import PageLoading from "../components/ui/PageLoading";
 import { useAuth } from "../context/AuthContext";
-
 export default function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
   const location = useLocation();
 
   if (loading) {
-    return (
-      <div className="app-loading">
-        <div className="app-loading__spinner" aria-hidden="true" />
-        <p>Loading…</p>
-      </div>
-    );
+    return <PageLoading />;
   }
 
   if (!user) {
