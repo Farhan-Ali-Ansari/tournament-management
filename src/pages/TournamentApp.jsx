@@ -33,6 +33,7 @@ import { useTournamentData } from "../hooks/useTournamentData";
 import { getAuthErrorMessage } from "../lib/authErrors";
 import ShareFixturesButton from "../components/ShareFixturesButton";
 import { calculateLeagueTable } from "../lib/leagueTable";
+import { applyBinaryLeagueScore } from "../lib/leagueScores";
 
 const VIEW_FROM_PATH = {
   setup: "setup",
@@ -310,13 +311,7 @@ export default function TournamentApp() {
   const handleScoreChange = (matchId, team, value) => {
     setMatches((prev) =>
       prev.map((m) =>
-        m.id === matchId
-          ? {
-              ...m,
-              scoreA: team === "A" ? value : m.scoreA,
-              scoreB: team === "B" ? value : m.scoreB,
-            }
-          : m
+        m.id === matchId ? applyBinaryLeagueScore(m, team, value) : m
       )
     );
   };
@@ -884,6 +879,7 @@ export default function TournamentApp() {
           teamName={detailTeam}
           stats={tableData[detailTeam]}
           matches={matches}
+          tournamentName={tournamentName}
           onClose={() => setDetailTeam(null)}
         />
       )}

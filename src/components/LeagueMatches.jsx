@@ -58,22 +58,38 @@ export default function LeagueMatches({ matches, onScoreChange, readOnly = false
               <>
             <input
               className="fixture-score-input"
-              type="number"
-              min="0"
+              type="text"
               inputMode="numeric"
+              pattern="[01]"
+              maxLength={1}
+              placeholder="—"
               value={match.scoreA}
-              onChange={(e) => onScoreChange(match.id, "A", e.target.value)}
-              aria-label={`${match.teamA} score`}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (v === "" || v === "0" || v === "1") {
+                  onScoreChange(match.id, "A", v);
+                }
+              }}
+              aria-label={`${match.teamA} score (0 or 1)`}
+              title="Enter 0 or 1 — the other team updates automatically"
             />
             <span className="fixture-score-sep">–</span>
             <input
               className="fixture-score-input"
-              type="number"
-              min="0"
+              type="text"
               inputMode="numeric"
+              pattern="[01]"
+              maxLength={1}
+              placeholder="—"
               value={match.scoreB}
-              onChange={(e) => onScoreChange(match.id, "B", e.target.value)}
-              aria-label={`${match.teamB} score`}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (v === "" || v === "0" || v === "1") {
+                  onScoreChange(match.id, "B", v);
+                }
+              }}
+              aria-label={`${match.teamB} score (0 or 1)`}
+              title="Enter 0 or 1 — the other team updates automatically"
             />
               </>
             )}

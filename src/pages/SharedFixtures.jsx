@@ -166,6 +166,7 @@ export default function SharedFixtures() {
           teamName={detailTeam}
           stats={tableData[detailTeam]}
           matches={matches}
+          tournamentName={name}
           onClose={() => setDetailTeam(null)}
         />
       )}

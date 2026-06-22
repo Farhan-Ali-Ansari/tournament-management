@@ -1,9 +1,23 @@
-export default function LeagueTeamDetailModal({ teamName, stats, matches, onClose }) {
+import { useRef, useState } from "react";
+import { exportElementFullContent } from "../lib/exportImage";
+
+export default function LeagueTeamDetailModal({
+  teamName,
+  stats,
+  matches,
+  tournamentName = "",
+  onClose,
+}) {
+  const panelRef = useRef(null);
+  const captureRef = useRef(null);
+  const [exporting, setExporting] = useState(false);
   if (!teamName) return null;
 
-  const teamMatches = matches.filter(
-    (m) => m.teamA === teamName || m.teamB === teamName
-  );
+  const isPlayed = (m) => m.scoreA !== "" && m.scoreB !== "";
+
+  const teamMatches = matches
+    .filter((m) => m.teamA === teamName || m.teamB === teamName)
+    .sort((a, b) => Number(isPlayed(b)) - Number(isPlayed(a)));
 
   const opponent = (m) => (m.teamA === teamName ? m.teamB : m.teamA);
   const teamScore = (m) => (m.teamA === teamName ? m.scoreA : m.scoreB);
@@ -18,6 +32,29 @@ export default function LeagueTeamDetailModal({ teamName, stats, matches, onClos
     return "Draw";
   };
 
+  const takeScreenshot = async () => {
+    if (!captureRef.current || !panelRef.current) return;
+    setExporting(true);
+    try {
+      const safeTournament = (tournamentName || "tournament")
+        .trim()
+        .replace(/[^\w-]+/g, "-")
+        .slice(0, 32);
+      const safeTeam = teamName.trim().replace(/[^\w-]+/g, "-").slice(0, 32);
+      await exportElementFullContent(
+        captureRef.current,
+        `${safeTournament}-${safeTeam}-details.png`,
+        {
+          width: panelRef.current.clientWidth,
+          frameElement: panelRef.current,
+        }
+      );
+    } catch {
+      // ignore — user can retry
+    } finally {
+      setExporting(false);
+    }
+  };
   return (
     <div className="team-detail-modal" role="dialog" aria-modal="true" aria-labelledby="team-detail-title">
       <button
@@ -26,9 +63,9 @@ export default function LeagueTeamDetailModal({ teamName, stats, matches, onClos
         aria-label="Close"
         onClick={onClose}
       />
-      <div className="team-detail-modal__panel">
-        <header className="team-detail-modal__header">
-          <h2 id="team-detail-title">{teamName}</h2>
+      <div ref={panelRef} className="team-detail-modal__panel">
+        <div ref={captureRef} className="team-detail-modal__capture">
+        <header className="team-detail-modal__header">          <h2 id="team-detail-title">{teamName}</h2>
           <button type="button" className="team-detail-modal__close" onClick={onClose} aria-label="Close">
             ×
           </button>
@@ -75,6 +112,17 @@ export default function LeagueTeamDetailModal({ teamName, stats, matches, onClos
             </ul>
           )}
         </section>
+        </div>
+        <footer className="team-detail-modal__footer">
+          <button
+            type="button"
+            className="btn-action team-detail-modal__screenshot"
+            onClick={takeScreenshot}
+            disabled={exporting}
+          >
+            {exporting ? "Exporting…" : "Save screenshot"}
+          </button>
+        </footer>
       </div>
     </div>
   );
